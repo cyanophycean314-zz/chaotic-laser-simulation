@@ -102,8 +102,8 @@ if simulation == "simulation":
 				foutx.write("{:7f}\n".format(t))
 
 			#Progress
-			if index % (n / 20) == 0:
-				print '=' * int(index / (n / 20)) + str(int(100.*index/n)) + "%"
+			if index % (n / 50) == 0:
+				print '=' * int(index / (n / 50)) + str(int(100.*index/n)) + "%"
 
 			#Update history
 			x1hist.append(x1)
@@ -210,34 +210,39 @@ def binsearch(lst, key):
 
 #Generate graphs
 worig = Td/4
-for wvary in list(range(12)) + [worig]:
+varOverW = []
+Ws = []
+for wvary in list(range(14)):
 	#Get histograms
 	####################################
 	if abs(wvary - worig) < eps:
 		w = worig
-		binw = w/100
-		binno = int(T / binw)
+		binw = w/50
+		binno = int(T / binw) - int(transcount * Td / binw)
 	else:
-		w = 10**(wvary / 2 - 6) #Nice range for w
-		binw = w / 100 #So we can calculate variance
-		binno = 2 * transcount * int(Td / binw)
+		w = 10**(wvary / 2. - 5) * Td #Nice range for w
+		binw = w / 40 #So we can calculate variance
+		binno = transcount / 2 * int (w / binw) + max(1, transcount *int(1.5 * -np.log(binw)))
+		Ws.append(w)
+		print binno
 
 	#print binno
-	movingwindow = [0] * binno
+	offset = int(transcount * Td / binw)
+	movingwindow = [0] * (binno)
 	counter = 0
-	for i in range(binno):
-		lowerbound = binsearch(photonpops, binw * i - w)
-		upperbound = binsearch(photonpops, binw * i)
-		movingwindow[i] = upperbound - lowerbound #no -1 because binsearch returns number over the key
+	for i in range(offset, offset + binno):
+		lowerbound = binsearch(photonpops, binw * i)
+		upperbound = binsearch(photonpops, binw * i + w) #Don't start with zero counts
+		movingwindow[i - offset] = upperbound - lowerbound #no +1 because binsearch returns number over the key
 		'''while counter < len(photonpops) and photonpops[counter] >= (binw * i - w) and photonpops[counter] <= (binw * i):
 			movingwindow[i] += 1
 			counter += 1'''
 	#print movingwindow
 	#Toss out initial transient phase
-	movingwindow = movingwindow[transcount * int(Td / binw):]
-	timegraph = [x * binw - transcount * Td for x in range(binno)][transcount * int(Td / binw):]
-
 	print 'Histogram complete!'
+	timegraph = [x * binw for x in range(binno)]
+	if not abs(w - worig) < eps:
+		movingwindow = [float(x) / max(movingwindow) for x in movingwindow] #normalize it like intensity
 
 	#Generate prob plot
 	#plt.subplot(313)
@@ -249,27 +254,29 @@ for wvary in list(range(12)) + [worig]:
 		if abs(w - worig) < eps:
 			tinterval = 2 * int(transcount * Td / binw) #length of the section of the graph we will be shifting and comparing
 			mws = movingwindow[:tinterval] #mws = movingwindowslice
-			iterlen = int(transcount * Td / binw) / 10 #how far to shift along the graph
+			iterlen = int(transcount * Td / binw) / 50 #how far to shift along the graph
 		else:
-			mws = movingwindow
 			tinterval = len(movingwindow)
+			mws = movingwindow
 			iterlen = int(w / binw) #only need to know the correlations at values between w and binw
 		mean = np.average(mws)
 		C = []
-		maxval = 0
-		for i in range(tinterval):
-			maxval += (mws[i] - mean) ** 2
 
-		for i in range (1,iterlen):
-			j = i
+		for shift in range (iterlen):
+			j = shift
 			ans = 0
 			while j < tinterval:
-				ans += (mws[j-i] - mean) * (mws[j] - mean)
+				ans += (mws[j-shift] - mean) * (mws[j] - mean)
 				j += 1
-			C.append(ans / maxval * (tinterval / (tinterval - i))) #Scale the answer because not as many values as maxval
+			ans /= (tinterval - shift)
+			C.append(ans)
 
-			if i % 100 == 0:
-				print i
+			#Progress
+			if shift % (iterlen / 10) == 0:
+				print shift * 100. / iterlen
+
+		if abs(w - worig) < eps:
+			C = [x / C[0] for x in C] #Normalize it
 
 		#Create the symmetric C
 		Cgraph = C[::-1] + [1] + C
@@ -316,16 +323,16 @@ for wvary in list(range(12)) + [worig]:
 	
 	#Variance
 	#############################
-	varOverW = []
-	theta = 0
-	tp = 0
-	dtp = 1
-	while tp < int(w / binw):
-		theta += (1 - (tp / w)) * C[int(tp)] * dtp
-		tp += dtp
 	if not (abs(w - worig) < eps):
-		varOverW.append(2 * lambda0 * (mean + lambda0 * theta))
-
+		theta = 0
+		tp = 0 #To translate tp into real time, time = tp * binw
+		dtp = 1
+		while tp < iterlen:
+			theta += (1 - (tp * binw / w)) * C[tp] * dtp * binw
+			tp += dtp
+		theta *= 2 #We chopped it up because its an even function
+		varOverW.append(lambda0 * (mean + lambda0 * theta))
+'''
 plt.figure(1)
 plt.title('lambda0 * Td = ' + str(lambda0timesTd))
 plt.subplot(311)
@@ -339,8 +346,8 @@ plt.figure(2)
 plt.pcolor(psec)
 fig = plt.figure(3)
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(bigplot[0],bigplot[1],bigplot[2])
-#plt.figure(3)
-#plt.plot(varOverW)
+ax.plot(bigplot[0],bigplot[1],bigplot[2])'''
+plt.figure(4)
+plt.loglog(Ws, varOverW)
 
 plt.show()
