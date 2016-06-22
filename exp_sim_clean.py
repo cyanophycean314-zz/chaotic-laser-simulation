@@ -34,8 +34,8 @@ n = 100000000 #Photons to generate
 xeps = 0.003 #X epsilon
 eps = 0.00001 #other epsilon
 
-simulation = "3200"#"200" #Do the simulation or read a file
-autocorr = True #Do the autocorrelation, kinda slow
+simulation = "simulation"#"3200"#"200" #Do the simulation or read a file
+autocorr = False #Do the autocorrelation, kinda slow
 lowlevel = False #Discrete or continuous simulation
 
 if simulation == "simulation":
