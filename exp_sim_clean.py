@@ -25,16 +25,16 @@ betatimesTd = 8.87 #this is the actual measurement that Aaron used, different th
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 T1 = 0.0012 #Time constant for variable 1
 T2 = 0.00006 #Time constant for variable 2
-lambda0timesTd = 3200 #Metric given in Aaron's paper
+lambda0timesTd = 600 #Metric given in Aaron's paper
 lambda0 = lambda0timesTd / Td
 mu = 1 / lambda0 #Poisson interarrival time average
 phi = np.pi / 4 #Filter phase displacement
 transcount = 100 #How many Td's to wait for transients to die
-n = 100000000 #Photons to generate
+n = 6000000 #Photons to generate
 xeps = 0.003 #X epsilon
 eps = 0.00001 #other epsilon
 
-simulation = "simulation"#"3200"#"200" #Do the simulation or read a file
+simulation = "3200"#"200" #Do the simulation or read a file
 autocorr = False #Do the autocorrelation, kinda slow
 lowlevel = False #Discrete or continuous simulation
 
@@ -66,51 +66,50 @@ if simulation == "simulation":
 
 	timestart = time.clock()
 
-	if looptime:
-		x1hist = [.7834] * int(Td / dt)
-		x2hist = [0] * int(Td / dt)
+	x1hist = [.7834] * int(Td / dt)
+	x2hist = [0] * int(Td / dt)
 
-		while t < T:
-			while index < n and photontimes[index] < t:
-				#Get all the photons inside this tick
-				ptime = photontimes[index]
-				prob = np.sin( x1hist[0] - x2hist[0] + phi) ** 2
+	while t < T:
+		while index < n and photontimes[index] < t:
+			#Get all the photons inside this tick
+			ptime = photontimes[index]
+			prob = np.sin( x1hist[0] - x2hist[0] + phi) ** 2
 
+			if ptime > transcount * Td:
+				probs.append(prob)
+			#fout.write("{:.4e} {:.4e}\n".format(x1hist[0], x2hist[0]))
+
+			#A photon is queued up, send it through the modulator
+			if random.random() <= prob:
+				#Photon passed through!
+				#print 'Pop'
 				if ptime > transcount * Td:
-					probs.append(prob)
-				#fout.write("{:.4e} {:.4e}\n".format(x1hist[0], x2hist[0]))
+					#Filter out transients
+					photonpops.append(ptime)
+				x1 += beta / lambda0
+				x2 += beta / lambda0
 
-				#A photon is queued up, send it through the modulator
-				if random.random() <= prob:
-					#Photon passed through!
-					#print 'Pop'
-					if ptime > transcount * Td:
-						#Filter out transients
-						photonpops.append(ptime)
-					x1 += beta / lambda0
-					x2 += beta / lambda0
+			index += 1
 
-				index += 1
+		x1 *= dec1
+		x2 *= dec2
+		#foutx.write("{:6f} {:6f}\n".format(x1, x2))
 
-			x1 *= dec1
-			x2 *= dec2
-			#foutx.write("{:6f} {:6f}\n".format(x1, x2))
+		if abs(x1 - x2 - np.pi) < xeps:
+			poincaretimes.append(t)
+			foutx.write("{:7f}\n".format(t))
 
-			if abs(x1 - x2 - np.pi) < xeps:
-				poincaretimes.append(t)
-				foutx.write("{:7f}\n".format(t))
+		#Progress
+		if index % (n / 50) == 0:
+			print '=' * int(index / (n / 50)) + str(int(100.*index/n)) + "%"
 
-			#Progress
-			if index % (n / 50) == 0:
-				print '=' * int(index / (n / 50)) + str(int(100.*index/n)) + "%"
+		#Update history
+		x1hist.append(x1)
+		x2hist.append(x2)
+		x1hist.pop(0)
+		x2hist.pop(0)
 
-			#Update history
-			x1hist.append(x1)
-			x2hist.append(x2)
-			x1hist.pop(0)
-			x2hist.pop(0)
-
-			t += dt
+		t += dt
 
 	timeend = time.clock()
 
@@ -274,7 +273,7 @@ plt.subplot(311)
 plt.xlim([0,T - transcount * Td])
 plt.plot(timegraph, movingwindow)
 plt.subplot(312)
-plt.hist(movingwindow, bins = range(0,maxp,pbinw))
+plt.hist(movingwindow, bins = range(0,900,1))
 plt.subplot(313)
 plt.plot(Cgraph)
 plt.figure(2)
