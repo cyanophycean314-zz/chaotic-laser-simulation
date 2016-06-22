@@ -25,19 +25,18 @@ betatimesTd = 8.87 #this is the actual measurement that Aaron used, different th
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 T1 = 0.0012 #Time constant for variable 1
 T2 = 0.00006 #Time constant for variable 2
-lambda0timesTd = 3200 #Metric given in Aaron's paper
+lambda0timesTd = 600 #Metric given in Aaron's paper
 lambda0 = lambda0timesTd / Td
 mu = 1 / lambda0 #Poisson interarrival time average
 phi = np.pi / 4 #Filter phase displacement
 transcount = 100 #How many Td's to wait for transients to die
-n = 100000000 #Photons to generate
+n = 6000000 #Photons to generate
 xeps = 0.003 #X epsilon
 eps = 0.00001 #other epsilon
 
 simulation = "3200"#"200" #Do the simulation or read a file
-autocorr = True #Do the autocorrelation, kinda slow
+autocorr = False #Do the autocorrelation, kinda slow
 lowlevel = False #Discrete or continuous simulation
-looptime = True #Do time-steps or photon-steps
 
 if simulation == "simulation":
 	foutpop = open('pop.out','w')
@@ -67,93 +66,50 @@ if simulation == "simulation":
 
 	timestart = time.clock()
 
-	if looptime:
-		x1hist = [.7834] * int(Td / dt)
-		x2hist = [0] * int(Td / dt)
+	x1hist = [.7834] * int(Td / dt)
+	x2hist = [0] * int(Td / dt)
 
-		while t < T:
-			while index < n and photontimes[index] < t:
-				#Get all the photons inside this tick
-				ptime = photontimes[index]
-				prob = np.sin( x1hist[0] - x2hist[0] + phi) ** 2
+	while t < T:
+		while index < n and photontimes[index] < t:
+			#Get all the photons inside this tick
+			ptime = photontimes[index]
+			prob = np.sin( x1hist[0] - x2hist[0] + phi) ** 2
 
-				if ptime > transcount * Td:
-					probs.append(prob)
-				#fout.write("{:.4e} {:.4e}\n".format(x1hist[0], x2hist[0]))
-
-				#A photon is queued up, send it through the modulator
-				if random.random() <= prob:
-					#Photon passed through!
-					#print 'Pop'
-					if ptime > transcount * Td:
-						#Filter out transients
-						photonpops.append(ptime)
-					x1 += beta / lambda0
-					x2 += beta / lambda0
-
-				index += 1
-
-			x1 *= dec1
-			x2 *= dec2
-			#foutx.write("{:6f} {:6f}\n".format(x1, x2))
-
-			if abs(x1 - x2 - np.pi) < xeps:
-				poincaretimes.append(t)
-				foutx.write("{:7f}\n".format(t))
-
-			#Progress
-			if index % (n / 50) == 0:
-				print '=' * int(index / (n / 50)) + str(int(100.*index/n)) + "%"
-
-			#Update history
-			x1hist.append(x1)
-			x2hist.append(x2)
-			x1hist.pop(0)
-			x2hist.pop(0)
-
-			t += dt
-	else:
-		ctr = 0
-		x1hist = [] #Value of x1 at the ith photon
-		x2hist = []
-		for i in range(n):
-			ptime = photontimes[i]
-			if ptime < 2 * Td:
-				prob = 0
-			else:
-				while photontimes[ctr] < ptime - Td:
-					ctr += 1
-				ctr -= 1
-				x1past = x1hist[ctr] * np.exp (-1 / T1 * (ptime - Td - photontimes[ctr]))
-				x2past = x2hist[ctr] * np.exp (-1 / T2 * (ptime - Td - photontimes[ctr]))
-				prob = np.sin( x1past - x2past + phi) ** 2
 			if ptime > transcount * Td:
 				probs.append(prob)
-			fout.write("{:.4e} {:.4e}\n".format(x1, x2))
+			#fout.write("{:.4e} {:.4e}\n".format(x1hist[0], x2hist[0]))
 
 			#A photon is queued up, send it through the modulator
 			if random.random() <= prob:
 				#Photon passed through!
 				#print 'Pop'
 				if ptime > transcount * Td:
-					#Filte rout transients
+					#Filter out transients
 					photonpops.append(ptime)
+				x1 += beta / lambda0
+				x2 += beta / lambda0
 
-				x1 = x1 * np.exp(-1/T1 * (ptime - lastt)) + beta / lambda0
-				x2 = x2 * np.exp(-1/T2 * (ptime - lastt)) + beta / lambda0
-				x1hist.append( x1 )
-				x2hist.append( x2 )
-				lastt = ptime
+			index += 1
 
-			x1hist.append( x1 * np.exp(-1 / T1 * (ptime - lastt)) )
-			x2hist.append( x2 * np.exp(-1 / T1 * (ptime - lastt)) )
+		x1 *= dec1
+		x2 *= dec2
+		#foutx.write("{:6f} {:6f}\n".format(x1, x2))
 
-			#Progress
-			if i % (n / 20) == 0:
-				print '=' * int(i / (n / 20)) + str(int(100.*i/n)) + "%"
-				print ctr
-				print len(x1hist)
-				print ptime - Td
+		if abs(x1 - x2 - np.pi) < xeps:
+			poincaretimes.append(t)
+			foutx.write("{:7f}\n".format(t))
+
+		#Progress
+		if index % (n / 50) == 0:
+			print '=' * int(index / (n / 50)) + str(int(100.*index/n)) + "%"
+
+		#Update history
+		x1hist.append(x1)
+		x2hist.append(x2)
+		x1hist.pop(0)
+		x2hist.pop(0)
+
+		t += dt
 
 	timeend = time.clock()
 
@@ -188,10 +144,6 @@ else:
 
 print 'Now graphing...'
 
-#The only data used is photonpops and probs
-#print photonpops
-#print T
-
 #Print results
 ######################################
 
@@ -225,20 +177,11 @@ for i in range(offset, offset + binno):
 	lowerbound = binsearch(photonpops, binw * i)
 	upperbound = binsearch(photonpops, binw * i + w) #Don't start with zero counts
 	movingwindow[i - offset] = upperbound - lowerbound #no +1 because binsearch returns number over the key
-	#while counter < len(photonpops) and photonpops[counter] >= (binw * i - w) and photonpops[counter] <= (binw * i):
-	#	movingwindow[i] += 1
-	#	counter += 1
 
 #print movingwindow
 #Toss out initial transient phase
 print 'Histogram complete!'
 timegraph = [x * binw for x in range(binno)]
-#if not abs(w - worig) < eps:
-#	movingwindow = [float(x) / max(movingwindow) for x in movingwindow] #normalize it like intensity
-
-#Generate prob plot
-#plt.subplot(313)
-#plt.hist(probs, bins = 20)
 
 #Autocorrelation
 #############################
@@ -330,7 +273,7 @@ plt.subplot(311)
 plt.xlim([0,T - transcount * Td])
 plt.plot(timegraph, movingwindow)
 plt.subplot(312)
-plt.hist(movingwindow, bins = range(0,maxp,pbinw))
+plt.hist(movingwindow, bins = range(0,900,1))
 plt.subplot(313)
 plt.plot(Cgraph)
 plt.figure(2)
