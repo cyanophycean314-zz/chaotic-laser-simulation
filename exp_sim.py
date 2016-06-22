@@ -147,6 +147,7 @@ print 'Now graphing...'
 #Print results
 ######################################
 
+
 def binsearch(lst, key):
 	low = 0
 	top = len(lst) - 1
@@ -159,6 +160,12 @@ def binsearch(lst, key):
 		else:
 			low = med + 1
 	return low
+
+def movingwindowcalc(t):
+	#print binno
+	lowerbound = binsearch(photonpops, t - w)
+	upperbound = binsearch(photonpops, t)
+	return upperbound - lowerbound
 
 #Generate graphs
 
@@ -226,12 +233,11 @@ else:
 	pbinw = 4
 	maxp = 800
 
-psec = np.zeros((maxp / pbinw, maxp / pbinw)) #(N_w(t), N_w(t - Td/4))
+psec = [[int(_) for _ in x] for x in np.zeros((maxp / pbinw, maxp / pbinw))] #(N_w(t), N_w(t - Td/4))
 for ptime in poincaretimes:
-	nearestindex = int(ptime / binw) - offset
-	if nearestindex >= int(Td / binw):
-		nwp = movingwindow[nearestindex] #cause we already chopped off a transcount
-		nwpt = movingwindow[nearestindex - int(Td / 4 / binw)]
+	if ptime >= transcount * Td + Td / 4:
+		nwp = movingwindowcalc(ptime) #cause we already chopped off a transcount
+		nwpt = movingwindowcalc(ptime - Td / 4)
 		if nwp >= maxp or nwpt >= maxp:
 			#Don't wanna deal with outliers
 			continue
@@ -241,10 +247,11 @@ print 'Poincare section done!'
 
 #3D Diagram
 bigplot = [[],[],[]]
-for i in range(2,20000):			
-	bigplot[0].append(movingwindow[i])
-	bigplot[1].append(movingwindow[i-int(Td / 4 / binw)])
-	bigplot[2].append(movingwindow[i-2 * int(Td / 4 / binw)])
+for i in range(100,20000):
+	tt = transcount * Td + binw * i
+	bigplot[0].append(movingwindowcalc(tt))
+	bigplot[1].append(movingwindowcalc(tt - Td / 4))
+	bigplot[2].append(movingwindowcalc(tt - 2 * Td / 4))
 
 print '3d attractor done!'
 
@@ -277,7 +284,7 @@ plt.hist(movingwindow, bins = range(0,900,1))
 plt.subplot(313)
 plt.plot(Cgraph)
 plt.figure(2)
-plt.pcolor(psec)
+plt.pcolor(np.array(psec))
 fig = plt.figure(3)
 ax = fig.add_subplot(111, projection='3d')
 ax.plot(bigplot[0],bigplot[1],bigplot[2])
