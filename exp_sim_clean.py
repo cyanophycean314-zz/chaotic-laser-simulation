@@ -37,7 +37,6 @@ eps = 0.00001 #other epsilon
 simulation = "3200"#"200" #Do the simulation or read a file
 autocorr = True #Do the autocorrelation, kinda slow
 lowlevel = False #Discrete or continuous simulation
-looptime = True #Do time-steps or photon-steps
 
 if simulation == "simulation":
 	foutpop = open('pop.out','w')
@@ -112,48 +111,6 @@ if simulation == "simulation":
 			x2hist.pop(0)
 
 			t += dt
-	else:
-		ctr = 0
-		x1hist = [] #Value of x1 at the ith photon
-		x2hist = []
-		for i in range(n):
-			ptime = photontimes[i]
-			if ptime < 2 * Td:
-				prob = 0
-			else:
-				while photontimes[ctr] < ptime - Td:
-					ctr += 1
-				ctr -= 1
-				x1past = x1hist[ctr] * np.exp (-1 / T1 * (ptime - Td - photontimes[ctr]))
-				x2past = x2hist[ctr] * np.exp (-1 / T2 * (ptime - Td - photontimes[ctr]))
-				prob = np.sin( x1past - x2past + phi) ** 2
-			if ptime > transcount * Td:
-				probs.append(prob)
-			fout.write("{:.4e} {:.4e}\n".format(x1, x2))
-
-			#A photon is queued up, send it through the modulator
-			if random.random() <= prob:
-				#Photon passed through!
-				#print 'Pop'
-				if ptime > transcount * Td:
-					#Filte rout transients
-					photonpops.append(ptime)
-
-				x1 = x1 * np.exp(-1/T1 * (ptime - lastt)) + beta / lambda0
-				x2 = x2 * np.exp(-1/T2 * (ptime - lastt)) + beta / lambda0
-				x1hist.append( x1 )
-				x2hist.append( x2 )
-				lastt = ptime
-
-			x1hist.append( x1 * np.exp(-1 / T1 * (ptime - lastt)) )
-			x2hist.append( x2 * np.exp(-1 / T1 * (ptime - lastt)) )
-
-			#Progress
-			if i % (n / 20) == 0:
-				print '=' * int(i / (n / 20)) + str(int(100.*i/n)) + "%"
-				print ctr
-				print len(x1hist)
-				print ptime - Td
 
 	timeend = time.clock()
 
@@ -188,10 +145,6 @@ else:
 
 print 'Now graphing...'
 
-#The only data used is photonpops and probs
-#print photonpops
-#print T
-
 #Print results
 ######################################
 
@@ -225,20 +178,11 @@ for i in range(offset, offset + binno):
 	lowerbound = binsearch(photonpops, binw * i)
 	upperbound = binsearch(photonpops, binw * i + w) #Don't start with zero counts
 	movingwindow[i - offset] = upperbound - lowerbound #no +1 because binsearch returns number over the key
-	#while counter < len(photonpops) and photonpops[counter] >= (binw * i - w) and photonpops[counter] <= (binw * i):
-	#	movingwindow[i] += 1
-	#	counter += 1
 
 #print movingwindow
 #Toss out initial transient phase
 print 'Histogram complete!'
 timegraph = [x * binw for x in range(binno)]
-#if not abs(w - worig) < eps:
-#	movingwindow = [float(x) / max(movingwindow) for x in movingwindow] #normalize it like intensity
-
-#Generate prob plot
-#plt.subplot(313)
-#plt.hist(probs, bins = 20)
 
 #Autocorrelation
 #############################
