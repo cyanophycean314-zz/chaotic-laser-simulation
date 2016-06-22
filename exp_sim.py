@@ -36,7 +36,8 @@ eps = 0.00001 #other epsilon
 
 simulation = "3200"#"200" #Do the simulation or read a file
 autocorr = False #Do the autocorrelation, kinda slow
-lowlevel = False #Discrete or continuous simulation
+poincare = False
+variance = False
 
 if simulation == "simulation":
 	foutpop = open('pop.out','w')
@@ -176,14 +177,18 @@ w = Td / 4
 binw = w / 20
 offset = int(transcount * Td / binw)
 binno = int(T / binw) - offset
-
-#print binno
 movingwindow = [0] * (binno)
-counter = 0
+#print binno
+
+lowcnt = 0 #binsearch(photonpops, transcount * Td * 0.99)
+highcnt = 0 #binsearch(photonpops, transcount * Td)
 for i in range(offset, offset + binno):
-	lowerbound = binsearch(photonpops, binw * i)
-	upperbound = binsearch(photonpops, binw * i + w) #Don't start with zero counts
-	movingwindow[i - offset] = upperbound - lowerbound #no +1 because binsearch returns number over the key
+	#Sliding count - linear, suggested by Joe
+	while lowcnt < len(photonpops) and photonpops[lowcnt] < i * binw:
+		lowcnt += 1
+	while highcnt < len(photonpops) and photonpops[highcnt] < i * binw + w:
+		highcnt += 1
+	movingwindow[i - offset] = highcnt - lowcnt
 
 #print movingwindow
 #Toss out initial transient phase
@@ -223,56 +228,61 @@ else:
 
 #Poincare section
 ################################
-if lambda0timesTd < 13:
-	pbinw = 1
-	maxp = 8
-elif lambda0timesTd < 210:
-	pbinw = 1
-	maxp = 80
-else:
-	pbinw = 4
-	maxp = 800
+if poincare:
+	if lambda0timesTd < 13:
+		pbinw = 1
+		maxp = 8
+	elif lambda0timesTd < 210:
+		pbinw = 1
+		maxp = 80
+	else:
+		pbinw = 4
+		maxp = 800
 
-psec = [[int(_) for _ in x] for x in np.zeros((maxp / pbinw, maxp / pbinw))] #(N_w(t), N_w(t - Td/4))
-for ptime in poincaretimes:
-	if ptime >= transcount * Td + Td / 4:
-		nwp = movingwindowcalc(ptime) #cause we already chopped off a transcount
-		nwpt = movingwindowcalc(ptime - Td / 4)
-		if nwp >= maxp or nwpt >= maxp:
-			#Don't wanna deal with outliers
-			continue
-		psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
+	psec = [[int(_) for _ in x] for x in np.zeros((maxp / pbinw, maxp / pbinw))] #(N_w(t), N_w(t - Td/4))
+	for ptime in poincaretimes:
+		if ptime >= transcount * Td + Td / 4:
+			nwp = movingwindowcalc(ptime) #cause we already chopped off a transcount
+			nwpt = movingwindowcalc(ptime - Td / 4)
+			if nwp >= maxp or nwpt >= maxp:
+				#Don't wanna deal with outliers
+				continue
+			psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
 
-print 'Poincare section done!'
+	print 'Poincare section done!'
 
-#3D Diagram
-bigplot = [[],[],[]]
-for i in range(100,20000):
-	tt = transcount * Td + binw * i
-	bigplot[0].append(movingwindowcalc(tt))
-	bigplot[1].append(movingwindowcalc(tt - Td / 4))
-	bigplot[2].append(movingwindowcalc(tt - 2 * Td / 4))
+	#3D Diagram
+	bigplot = [[],[],[]]
+	for i in range(100,20000):
+		tt = transcount * Td + binw * i
+		bigplot[0].append(movingwindowcalc(tt))
+		bigplot[1].append(movingwindowcalc(tt - Td / 4))
+		bigplot[2].append(movingwindowcalc(tt - 2 * Td / 4))
 
-print '3d attractor done!'
+	print '3d attractor done!'
 
 #Variance
 #############################
-varOverW = []
-Ws = []
-for wvary in list(range(35)):
-	w = 10**(wvary / 5. - 5) * Td #Nice range for w
-	binw = w / 40 #So we can calculate variance
-	binno = transcount / 2 * int (w / binw) + max(1, transcount *int(2 * -np.log(binw)))
-	Ws.append(w)
-	offset = offset
-	mws = [0] * (binno)
-	counter = 0
-	for i in range(offset, offset + binno):
-		lowerbound = binsearch(photonpops, binw * i)
-		upperbound = binsearch(photonpops, binw * i + w) #Don't start with zero counts
-		mws[i - offset] = upperbound - lowerbound #no +1 because binsearch returns number over the key
+if variance:
+	varOverW = []
+	Ws = []
+	for wvary in list(range(35)):
+		w = 10**(wvary / 5. - 5) * Td #Nice range for w
+		binw = w / 40 #So we can calculate variance
+		binno = transcount / 2 * int (w / binw) + max(1, transcount *int(2 * -np.log(binw)))
+		Ws.append(w)
+		offset = offset
+		mws = [0] * (binno)
+		counter = 0
+		for i in range(offset, offset + binno):
+			lowerbound = binsearch(photonpops, binw * i)
+			upperbound = binsearch(photonpops, binw * i + w) #Don't start with zero counts
+			mws[i - offset] = upperbound - lowerbound #no +1 because binsearch returns number over the key
 
-	varOverW.append(np.var(mws) / w)
+		varOverW.append(np.var(mws) / w)
+
+#Poincare Slice
+####################################
 
 plt.figure(1)
 plt.title('lambda0 * Td = ' + str(lambda0timesTd))
@@ -280,15 +290,19 @@ plt.subplot(311)
 plt.xlim([0,T - transcount * Td])
 plt.plot(timegraph, movingwindow)
 plt.subplot(312)
-plt.hist(movingwindow, bins = range(0,900,1))
+plt.hist(movingwindow, bins = range(0,900,3))
 plt.subplot(313)
 plt.plot(Cgraph)
-plt.figure(2)
-plt.pcolor(np.array(psec))
-fig = plt.figure(3)
-ax = fig.add_subplot(111, projection='3d')
-ax.plot(bigplot[0],bigplot[1],bigplot[2])
-plt.figure(4)
-plt.loglog(Ws, varOverW)
+
+if poincare:
+	plt.figure(2)
+	plt.pcolor(np.array(psec))
+	fig = plt.figure(3)
+	ax = fig.add_subplot(111, projection='3d')
+	ax.plot(bigplot[0],bigplot[1],bigplot[2])
+
+if variance:
+	plt.figure(4)
+	plt.loglog(Ws, varOverW)
 
 plt.show()

@@ -30,7 +30,7 @@ xeps = 0.003 #X epsilon
 eps = 0.00001 #other epsilon
 
 filelist = ["12,5", 25, 50, 100, 200, 400, 600, 800, 1200, 1600, 2400, 3200]
-binnings = [1,1,1,1,2,2,4,4,5,5,5,5]
+binnings =  [1,1,1,1,2,2,2,2,2,2,2,2]
 
 #Compare with the uniform
 ######################################################
@@ -48,7 +48,7 @@ def getkldiv(mw, dFU, binwidth):
 		else:
 			kldiv += mwhistprob[i] * np.log(mwhistprob[i] / uniformprob[i])
 	print kldiv
-	
+	'''
 	if dFU:
 		plt.figure(1)
 		plt.subplot(211)
@@ -57,7 +57,7 @@ def getkldiv(mw, dFU, binwidth):
 		plt.subplot(212)
 		plt.bar(range(binnumber),uniformprob)
 		plt.show()
-	
+	'''
 	
 	return kldiv	
 
