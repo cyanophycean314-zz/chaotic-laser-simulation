@@ -211,8 +211,9 @@ def binsearch(lst, key):
 #Generate graphs
 worig = Td/4
 varOverW = []
+newvarOverW = []
 Ws = []
-for wvary in list(range(14)):
+for wvary in list(range(28)):
 	#Get histograms
 	####################################
 	if abs(wvary - worig) < eps:
@@ -220,9 +221,9 @@ for wvary in list(range(14)):
 		binw = w/50
 		binno = int(T / binw) - int(transcount * Td / binw)
 	else:
-		w = 10**(wvary / 2. - 5) * Td #Nice range for w
+		w = 10**(wvary / 4. - 5) * Td #Nice range for w
 		binw = w / 40 #So we can calculate variance
-		binno = transcount / 2 * int (w / binw) + max(1, transcount *int(1.5 * -np.log(binw)))
+		binno = transcount / 2 * int (w / binw) + max(1, transcount *int(2 * -np.log(binw)))
 		Ws.append(w)
 		print binno
 
@@ -241,8 +242,8 @@ for wvary in list(range(14)):
 	#Toss out initial transient phase
 	print 'Histogram complete!'
 	timegraph = [x * binw for x in range(binno)]
-	if not abs(w - worig) < eps:
-		movingwindow = [float(x) / max(movingwindow) for x in movingwindow] #normalize it like intensity
+	#if not abs(w - worig) < eps:
+	#	movingwindow = [float(x) / max(movingwindow) for x in movingwindow] #normalize it like intensity
 
 	#Generate prob plot
 	#plt.subplot(313)
@@ -332,6 +333,12 @@ for wvary in list(range(14)):
 			tp += dtp
 		theta *= 2 #We chopped it up because its an even function
 		varOverW.append(lambda0 * (mean + lambda0 * theta))
+
+		#New Variance
+		##############################
+		newvarOverW.append(np.var(mws) / w)
+
+
 '''
 plt.figure(1)
 plt.title('lambda0 * Td = ' + str(lambda0timesTd))
@@ -348,6 +355,7 @@ fig = plt.figure(3)
 ax = fig.add_subplot(111, projection='3d')
 ax.plot(bigplot[0],bigplot[1],bigplot[2])'''
 plt.figure(4)
-plt.loglog(Ws, varOverW)
+#plt.loglog(Ws, varOverW)
+plt.loglog(Ws, newvarOverW)
 
 plt.show()
