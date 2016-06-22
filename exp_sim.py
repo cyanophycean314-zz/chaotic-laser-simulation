@@ -209,137 +209,121 @@ def binsearch(lst, key):
 	return low
 
 #Generate graphs
-worig = Td/4
-varOverW = []
-newvarOverW = []
-Ws = []
-for wvary in list(range(28)):
-	#Get histograms
-	####################################
-	if abs(wvary - worig) < eps:
-		w = worig
-		binw = w/50
-		binno = int(T / binw) - int(transcount * Td / binw)
-	else:
-		w = 10**(wvary / 4. - 5) * Td #Nice range for w
-		binw = w / 40 #So we can calculate variance
-		binno = transcount / 2 * int (w / binw) + max(1, transcount *int(2 * -np.log(binw)))
-		Ws.append(w)
-		print binno
 
-	#print binno
+#Get histograms
+####################################
+
+w = Td / 4
+binw = w / 20
+binno = int(T / binw) - int(transcount * Td / binw)
+
+#print binno
+offset = int(transcount * Td / binw)
+movingwindow = [0] * (binno)
+counter = 0
+for i in range(offset, offset + binno):
+	lowerbound = binsearch(photonpops, binw * i)
+	upperbound = binsearch(photonpops, binw * i + w) #Don't start with zero counts
+	movingwindow[i - offset] = upperbound - lowerbound #no +1 because binsearch returns number over the key
+	#while counter < len(photonpops) and photonpops[counter] >= (binw * i - w) and photonpops[counter] <= (binw * i):
+	#	movingwindow[i] += 1
+	#	counter += 1
+
+#print movingwindow
+#Toss out initial transient phase
+print 'Histogram complete!'
+timegraph = [x * binw for x in range(binno)]
+#if not abs(w - worig) < eps:
+#	movingwindow = [float(x) / max(movingwindow) for x in movingwindow] #normalize it like intensity
+
+#Generate prob plot
+#plt.subplot(313)
+#plt.hist(probs, bins = 20)
+
+#Autocorrelation
+#############################
+if autocorr:
+	tinterval = 2 * int(transcount * Td / binw) #length of the section of the graph we will be shifting and comparing
+	mws = movingwindow[:tinterval] #mws = movingwindowslice
+	iterlen = int(transcount * Td / binw) / 20 #how far to shift along the graph
+	mean = np.average(mws)
+	C = []
+
+	for shift in range (iterlen):
+		j = shift
+		ans = 0
+		while j < tinterval:
+			ans += (mws[j-shift] - mean) * (mws[j] - mean)
+			j += 1
+		ans /= (tinterval - shift)
+		C.append(ans)
+
+		#Progress
+		if shift % (iterlen / 10) == 0:
+			print shift * 100. / iterlen
+
+	C = [x / C[0] for x in C] #Normalize it
+
+	#Create the symmetric C
+	Cgraph = C[::-1] + [1] + C
+	#print Cgraph
+	print 'Autocorrelation done!'
+else:
+	Cgraph = [1]
+
+#Poincare section
+################################
+if lambda0timesTd < 13:
+	pbinw = 1
+	maxp = 8
+elif lambda0timesTd < 210:
+	pbinw = 1
+	maxp = 80
+else:
+	pbinw = 4
+	maxp = 800
+
+psec = np.zeros((maxp / pbinw, maxp / pbinw)) #(N_w(t), N_w(t - Td/4))
+for ptime in poincaretimes:
+	nearestindex = int(ptime / binw) - int(transcount * Td / binw)
+	if nearestindex >= int(Td / binw):
+		nwp = movingwindow[nearestindex] #cause we already chopped off a transcount
+		nwpt = movingwindow[nearestindex - int(Td / 4 / binw)]
+		if nwp >= maxp or nwpt >= maxp:
+			#Don't wanna deal with outliers
+			continue
+		psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
+
+print 'Poincare section done!'
+
+#3D Diagram
+bigplot = [[],[],[]]
+for i in range(2,20000):			
+	bigplot[0].append(movingwindow[i])
+	bigplot[1].append(movingwindow[i-int(Td / 4 / binw)])
+	bigplot[2].append(movingwindow[i-2 * int(Td / 4 / binw)])
+
+print '3d attractor done!'
+
+#Variance
+#############################
+varOverW = []
+Ws = []
+for wvary in list(range(35)):
+	w = 10**(wvary / 5. - 5) * Td #Nice range for w
+	binw = w / 40 #So we can calculate variance
+	binno = transcount / 2 * int (w / binw) + max(1, transcount *int(2 * -np.log(binw)))
+	Ws.append(w)
 	offset = int(transcount * Td / binw)
-	movingwindow = [0] * (binno)
+	mws = [0] * (binno)
 	counter = 0
 	for i in range(offset, offset + binno):
 		lowerbound = binsearch(photonpops, binw * i)
 		upperbound = binsearch(photonpops, binw * i + w) #Don't start with zero counts
-		movingwindow[i - offset] = upperbound - lowerbound #no +1 because binsearch returns number over the key
-		'''while counter < len(photonpops) and photonpops[counter] >= (binw * i - w) and photonpops[counter] <= (binw * i):
-			movingwindow[i] += 1
-			counter += 1'''
-	#print movingwindow
-	#Toss out initial transient phase
-	print 'Histogram complete!'
-	timegraph = [x * binw for x in range(binno)]
-	#if not abs(w - worig) < eps:
-	#	movingwindow = [float(x) / max(movingwindow) for x in movingwindow] #normalize it like intensity
+		mws[i - offset] = upperbound - lowerbound #no +1 because binsearch returns number over the key
 
-	#Generate prob plot
-	#plt.subplot(313)
-	#plt.hist(probs, bins = 20)
+	varOverW.append(np.var(mws) / w)
 
-	#Autocorrelation
-	#############################
-	if autocorr:
-		if abs(w - worig) < eps:
-			tinterval = 2 * int(transcount * Td / binw) #length of the section of the graph we will be shifting and comparing
-			mws = movingwindow[:tinterval] #mws = movingwindowslice
-			iterlen = int(transcount * Td / binw) / 50 #how far to shift along the graph
-		else:
-			tinterval = len(movingwindow)
-			mws = movingwindow
-			iterlen = int(w / binw) #only need to know the correlations at values between w and binw
-		mean = np.average(mws)
-		C = []
-
-		for shift in range (iterlen):
-			j = shift
-			ans = 0
-			while j < tinterval:
-				ans += (mws[j-shift] - mean) * (mws[j] - mean)
-				j += 1
-			ans /= (tinterval - shift)
-			C.append(ans)
-
-			#Progress
-			if shift % (iterlen / 10) == 0:
-				print shift * 100. / iterlen
-
-		if abs(w - worig) < eps:
-			C = [x / C[0] for x in C] #Normalize it
-
-		#Create the symmetric C
-		Cgraph = C[::-1] + [1] + C
-		#print Cgraph
-		print 'Autocorrelation done!'
-	else:
-		Cgraph = [1]
-
-	#Poincare section
-	################################
-	if abs(w - worig) < eps:
-		#Poincare section only necessary for Td/4
-		if lambda0timesTd < 13:
-			pbinw = 1
-			maxp = 8
-		elif lambda0timesTd < 210:
-			pbinw = 1
-			maxp = 80
-		else:
-			pbinw = 4
-			maxp = 800
-
-		psec = np.zeros((maxp / pbinw, maxp / pbinw)) #(N_w(t), N_w(t - Td/4))
-		for ptime in poincaretimes:
-			nearestindex = int(ptime / binw) - int(transcount * Td / binw)
-			if nearestindex >= int(Td / binw):
-				nwp = movingwindow[nearestindex] #cause we already chopped off a transcount
-				nwpt = movingwindow[nearestindex - int(Td / 4 / binw)]
-				if nwp >= maxp or nwpt >= maxp:
-					#Don't wanna deal with outliers
-					continue
-				psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
-
-		print 'Poincare section done!'
-
-		#3D Diagram
-		bigplot = [[],[],[]]
-		for i in range(2,20000):			
-			bigplot[0].append(movingwindow[i])
-			bigplot[1].append(movingwindow[i-int(Td / 4 / binw)])
-			bigplot[2].append(movingwindow[i-2 * int(Td / 4 / binw)])
-
-		print '3d attractor done!'
-	
-	#Variance
-	#############################
-	if not (abs(w - worig) < eps):
-		theta = 0
-		tp = 0 #To translate tp into real time, time = tp * binw
-		dtp = 1
-		while tp < iterlen:
-			theta += (1 - (tp * binw / w)) * C[tp] * dtp * binw
-			tp += dtp
-		theta *= 2 #We chopped it up because its an even function
-		varOverW.append(lambda0 * (mean + lambda0 * theta))
-
-		#New Variance
-		##############################
-		newvarOverW.append(np.var(mws) / w)
-
-
-'''
 plt.figure(1)
 plt.title('lambda0 * Td = ' + str(lambda0timesTd))
 plt.subplot(311)
@@ -353,9 +337,8 @@ plt.figure(2)
 plt.pcolor(psec)
 fig = plt.figure(3)
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(bigplot[0],bigplot[1],bigplot[2])'''
+ax.plot(bigplot[0],bigplot[1],bigplot[2])
 plt.figure(4)
-#plt.loglog(Ws, varOverW)
-plt.loglog(Ws, newvarOverW)
+plt.loglog(Ws, varOverW)
 
 plt.show()
