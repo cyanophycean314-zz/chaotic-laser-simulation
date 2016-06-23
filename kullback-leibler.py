@@ -29,8 +29,9 @@ n = 150000000 #Photons to generate
 xeps = 0.003 #X epsilon
 eps = 0.00001 #other epsilon
 
-filelist = ["12,5", 25, 50, 100, 200, 400, 600, 800, 1200, 1600, 2400, 3200]
-binnings =  [1,1,1,1,2,2,4,4,4,4,4,4]
+#filelist = ["12,5", 25, 50, 100, 200, 400, 600, 800, 1200, 1600, 2400, 3200]
+filelist = ["betaTd=0.0","betaTd=1.0","betaTd=2.0","betaTd=3.0","betaTd=4.0","betaTd=5.0","betaTd=6.0","betaTd=7.0","betaTd=8.0","betaTd=9.0",]
+binnings =  [4,4,4,4,4,4,4,4,4,4,4,4]
 
 #Compare with the uniform
 ######################################################
