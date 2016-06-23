@@ -40,10 +40,10 @@ w = Td / 4
 binw = w / 20
 offset = int(transcount * Td / binw)
 
-simulation = False
+simulation = True
 deterministic = False
 #filelist = ["lambda0Td=" + str(x) for x in [1000,1500,2000,2500,3000,3500,4000,5000,10000,20000]]
-filelist = ["3200big"]
+#filelist = ["lambda0Td=10000"]
 histogram = True
 autocorr = False
 poincare = True
@@ -136,11 +136,14 @@ def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
 		if ltTd < 13:
 			pbinw = 1
 			maxp = 8
-		elif ltTd < 21:
+		elif ltTd < 210:
 			pbinw = 1
 			maxp = 80
-		else:
+		elif ltTd < 5000:
 			pbinw = 4
+			maxp = int(math.ceil(ltTd / 4 / pbinw) * pbinw)
+		else:
+			pbinw = 10
 			maxp = int(math.ceil(ltTd / 4 / pbinw) * pbinw)
 
 		movingwindow = Nw
@@ -252,7 +255,9 @@ def showgraphs(Nw, timegraph, poincaretimes, ltTd, deterministic):
 		psec, pslice, pbounds = getpoincare(Nw, poincaretimes, ltTd, deterministic)
 		plt.figure(2)
 		plt.subplot(211)
+		plt.title("lambda0Td = {}".format(int(ltTd)))
 		plt.pcolor(np.array(psec))
+		plt.plot([maxp / 4, maxp * 3 / 4], [maxp, 0], color ='r')
 		plt.subplot(212)
 		plt.scatter(pbounds, pslice)
 
@@ -275,7 +280,7 @@ if simulation:
 			print lambda0timesTd
 			lambda0 = lambda0timesTd / Td
 			mu = 1 / lambda0 #Poisson interarrival time average
-			n = 3000 * lambda0timesTd
+			n = 10000 * lambda0timesTd
 
 			foutpop = open('lambda0Td=' + str(lambda0timesTd) + 'pop.out','w')
 			foutx = open('lambda0Td=' + str(lambda0timesTd) + 'xs.out','w') #x-simplified
