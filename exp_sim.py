@@ -39,12 +39,14 @@ n = 5000000 #Photons to generate
 w = Td / 4
 binw = w / 20
 offset = int(transcount * Td / binw)
+maxp = 1
+pbinw = 1
 
 simulation = False
 deterministic = False
 filelist = ["lambda0Td=" + str(x) for x in [1000,1500,2000,2500,3000,3500,4000,5000,10000]]
 #filelist = ["lambda0Td=10000"]
-histogram = True
+histogram = False
 autocorr = False
 poincare = True
 attractor3d = False
@@ -139,8 +141,11 @@ def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
 		elif ltTd < 210:
 			pbinw = 1
 			maxp = 80
-		elif ltTd < 5000:
+		elif ltTd < 3000:
 			pbinw = 4
+			maxp = int(math.ceil(ltTd / 4 / pbinw) * pbinw)
+		elif ltTd < 5000:
+			pbinw = 6
 			maxp = int(math.ceil(ltTd / 4 / pbinw) * pbinw)
 		else:
 			pbinw = 10
@@ -182,8 +187,9 @@ def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
 					pslice[int(nwp - maxp / 4) / pbinw] += 1
 
 		print 'Poincare section and slice done!'
-
-	return psec, pslice, range(len(pslice))
+	print maxp
+	slicer = [[maxp / 4 / pbinw, 3 * maxp / 4 / pbinw], [maxp / pbinw, 0]]
+	return psec, pslice, range(len(pslice)), slicer
 
 def get3dattractor(Nw, deterministic=False):
 	#3D Diagram
@@ -255,12 +261,12 @@ def showgraphs(Nw, timegraph, poincaretimes, ltTd, deterministic):
 			plt.plot(Cgraph)
 
 	if poincare:
-		psec, pslice, pbounds = getpoincare(Nw, poincaretimes, ltTd, deterministic)
+		psec, pslice, pbounds, slicer = getpoincare(Nw, poincaretimes, ltTd, deterministic)
 		plt.figure(2)
 		plt.subplot(211)
 		plt.title("lambda0Td = {}".format(int(ltTd)))
 		plt.pcolor(np.array(psec))
-		plt.plot([maxp / 4, maxp * 3 / 4], [maxp, 0], color ='r')
+		plt.plot(slicer[0], slicer[1], color ='r')
 		plt.subplot(212)
 		plt.scatter(pbounds, pslice)
 
