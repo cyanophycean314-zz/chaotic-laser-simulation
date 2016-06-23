@@ -42,11 +42,10 @@ offset = int(transcount * Td / binw)
 maxp = 1
 pbinw = 1
 
-simulation = False
 deterministic = True
 filelist = ["lambda0Td=" + str(x) for x in [1000,1500,2000,2500,3000,3500,4000,5000,10000]]
 #filelist = ["lambda0Td=10000"]
-histogram = False
+histogram = True
 autocorr = False
 poincare = True
 attractor3d = False
@@ -173,28 +172,34 @@ def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
 	else:
 		intensities = Nw
 		pbinw = 0.005
-		maxp = 1
+		maxp = 1.
 		psec = [[int(_) for _ in x] for x in np.zeros((maxp / pbinw, maxp / pbinw))] #(N_w(t), N_w(t - Td/4))
 		pslice = [0 for x in range(int(maxp / 2 / pbinw))]
 		#The slice we're taking is y = maxp -2(x - maxp / 4)
 		for ptime in poincaretimes:
-			if ptime > Td:
-				nwp = intensities[int((ptime - transtime) * sampspersec)]
-				nwpt = intensities[int((ptime - transtime - Td / 4) * sampspersec)]
+			if ptime > Td / 4:
+				#print ptime
+				nwp = intensities[int((ptime - Td / 4) * sampspersec)]
+				nwpt = intensities[int((ptime - 2 * Td / 4) * sampspersec)]
+
+				if nwp >= maxp:
+					nwp -= pbinw / 2
+				if nwpt >= maxp:
+					nwpt -= pbinw / 2
 				psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
+				
 				if abs(int((maxp - 2*(nwp - maxp / 4)) / pbinw) - int(nwpt / pbinw)) <= 1:
-					print str(nwp) + "," + str(nwpt)
 					pslice[int(nwp - maxp / 4 / pbinw)] += 1
 
 		print 'Poincare section and slice done!'
-	print maxp
+	#print maxp
 	slicer = [[maxp / 4 / pbinw, 3 * maxp / 4 / pbinw], [maxp / pbinw, 0]]
 	return psec, pslice, range(len(pslice)), slicer
 
 def get3dattractor(Nw, deterministic=False):
 	#3D Diagram
 	bigplot = [[],[],[]]
-	if deterministic:
+	if not deterministic:
 		for i in range(int(Td * sampspersec / 2), 20000):
 			tt = transcount * Td + binw * i
 			bigplot[0].append(movingwindowcalc(tt))
@@ -244,16 +249,16 @@ def showgraphs(Nw, timegraph, poincaretimes, ltTd, deterministic):
 			plt.subplot(311)
 			plt.title('Deterministic')
 			plt.xlim([0,T - transtime])
-			plt.plot(timegraph, intensities)
+			plt.plot(timegraph, Nw)
 			plt.subplot(312)
-			plt.hist(intensities, bins = 20)
+			plt.hist(Nw, bins = 100)
 		else:
 			plt.subplot(311)
 			plt.title('lambda0 * Td = ' + str(lambda0timesTd))
 			plt.xlim([0,T - transcount * Td])
 			plt.plot(timegraph, Nw)
 			plt.subplot(312)
-			plt.hist(movingwindow, bins = 30)
+			plt.hist(movingwindow, bins = 20)
 
 		if autocorr:
 			plt.subplot(313)
@@ -265,6 +270,8 @@ def showgraphs(Nw, timegraph, poincaretimes, ltTd, deterministic):
 		plt.figure(2)
 		plt.subplot(211)
 		plt.title("lambda0Td = {}".format(int(ltTd)))
+		plt.ylim([0,200])
+
 		plt.pcolor(np.array(psec))
 		plt.plot(slicer[0], slicer[1], color ='r')
 		plt.subplot(212)
@@ -312,6 +319,7 @@ if not deterministic:
 else:
 	transtime = 0.1
 	fin = open('detint.out','r')
+	finv = open('detv.out','r')
 	finxs = open('detxs.out','r')
 	intensities = []
 	for line in fin:
@@ -320,9 +328,23 @@ else:
 	sampspersec = intensities.pop(0)
 	timegraph = [x / sampspersec for x in range(int((T - transtime) * sampspersec))]
 
+	window = int(Td / 4 * sampspersec)
+	smoothedintensities = [np.mean(intensities[i - window:i]) for i in range(window, len(intensities))]	
+	intensities = smoothedintensities
+	timegraph = timegraph[:len(intensities)]
+
+
 	poincaretimes = []
 	for line in finxs:
 		poincaretimes.append(float(line))
+
+	voltages = []
+	for line in finv:
+		voltages.append(float(line))
+	smoothedvoltages = [np.mean(voltages[i:i + int(Td / 4 * sampspersec)]) for i in range(len(voltages) - int(w * sampspersec))]	
+	#voltages = smoothedvoltages
+	#timegraph = timegraph[:len(voltages)]
+
 
 	#Graph
 	showgraphs(intensities, timegraph, poincaretimes, 0, deterministic)
