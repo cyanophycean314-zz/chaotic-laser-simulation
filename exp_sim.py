@@ -40,9 +40,9 @@ w = Td / 4
 binw = w / 20
 offset = int(transcount * Td / binw)
 
-simulation = True
+simulation = False
 deterministic = False
-#filelist = ["lambda0Td=" + str(x) for x in [1000,1500,2000,2500,3000,3500,4000,5000,10000,20000]]
+filelist = ["lambda0Td=" + str(x) for x in [1000,1500,2000,2500,3000,3500,4000,5000,10000]]
 #filelist = ["lambda0Td=10000"]
 histogram = True
 autocorr = False
