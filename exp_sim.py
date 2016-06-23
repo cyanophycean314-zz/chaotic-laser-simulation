@@ -170,13 +170,16 @@ def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
 		pbinw = 0.005
 		maxp = 1
 		psec = [[int(_) for _ in x] for x in np.zeros((maxp / pbinw, maxp / pbinw))] #(N_w(t), N_w(t - Td/4))
-		pslice = [0 for x in range(int(maxp / pbinw))]
+		pslice = [0 for x in range(int(maxp / 2 / pbinw))]
+		#The slice we're taking is y = maxp -2(x - maxp / 4)
 		for ptime in poincaretimes:
 			if ptime > Td:
 				nwp = intensities[int((ptime - transtime) * sampspersec)]
 				nwpt = intensities[int((ptime - transtime - Td / 4) * sampspersec)]
 				psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
-				pslice[int(nwp / pbinw)] += 1
+				if int((maxp - 2*(nwp - maxp / 4)) / pbinw) == int(nwpt / pbinw):
+					print str(nwp) + "," + str(nwpt)
+					pslice[int(nwp - maxp / 4) / pbinw] += 1
 
 		print 'Poincare section and slice done!'
 
@@ -311,6 +314,8 @@ if simulation:
 			x1hist = [.7834] * int(Td / dt)
 			x2hist = [0] * int(Td / dt)
 
+			xdiff = 0
+
 			while t < T:
 				while index < n and photontimes[index] < t:
 					#Get all the photons inside this tick
@@ -337,9 +342,11 @@ if simulation:
 				x2 *= dec2
 				#foutx.write("{:6f} {:6f}\n".format(x1, x2))
 
-				if abs(x1 - x2 - np.pi) < xeps:
+				#Take the poincare slice
+				if (x1 - x2 - np.pi) * xdiff < 0:
 					poincaretimes.append(t)
 					foutx.write("{:7f}\n".format(t))
+				xdiff = x1 - x2 - np.pi
 
 				#Progress
 				if index % (n / 50) == 0:
