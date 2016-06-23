@@ -160,7 +160,7 @@ def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
 					continue
 				#print str(nwp) + "," + str(nwpt) + "," + str(maxp)
 				psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
-				if int((maxp - 2*(nwp - maxp / 4)) / pbinw) == int(nwpt / pbinw):
+				if abs(int((maxp - 2*(nwp - maxp / 4)) / pbinw) - int(nwpt / pbinw)) <= 1:
 					print str(nwp) + "," + str(nwpt)
 					pslice[int(nwp - maxp / 4) / pbinw] += 1
 
@@ -177,7 +177,7 @@ def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
 				nwp = intensities[int((ptime - transtime) * sampspersec)]
 				nwpt = intensities[int((ptime - transtime - Td / 4) * sampspersec)]
 				psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
-				if int((maxp - 2*(nwp - maxp / 4)) / pbinw) == int(nwpt / pbinw):
+				if abs(int((maxp - 2*(nwp - maxp / 4)) / pbinw) - int(nwpt / pbinw)) <= 1:
 					print str(nwp) + "," + str(nwpt)
 					pslice[int(nwp - maxp / 4) / pbinw] += 1
 
@@ -279,7 +279,7 @@ def showgraphs(Nw, timegraph, poincaretimes, ltTd, deterministic):
 
 if simulation:
 	if not deterministic:
-		for lambda0timesTd in [1000,1500,2000,2500,3000,3500,4000,5000,10000,20000]:
+		for lambda0timesTd in [5000]:
 			print lambda0timesTd
 			lambda0 = lambda0timesTd / Td
 			mu = 1 / lambda0 #Poisson interarrival time average
@@ -294,6 +294,7 @@ if simulation:
 			T = photontimes[n - 1] #max of the list
 			poincaretimes = [] #Points for poincare section, x1 - x2 = pi
 			#print np.array_str (taus)
+			foutpop.write('{:.6f} {:.1f} {}'.format(T, lambda0timesTd, n))
 			print np.array_str (photontimes)
 			print 'n/T ' + str(n / T) + ' lambda0 ' + str(lambda0)
 
@@ -333,6 +334,7 @@ if simulation:
 						if ptime > transcount * Td:
 							#Filter out transients
 							photonpops.append(ptime)
+							foutpop.write("{:7f}\n".format(ptime))
 						x1 += beta / lambda0
 						x2 += beta / lambda0
 
@@ -364,19 +366,12 @@ if simulation:
 
 			print 'Simulation complete! Time elapsed = ' + str(timeend - timestart)
 
-			#Output and save results
-			foutpop.write('{:.6f} {:.1f} {}'.format(T, lambda0timesTd, n))
-			for i in range(len(photonpops)):
-				foutpop.write(str('{:.7f}\n'.format(photonpops[i])))
-				if i % (len(photonpops) / 20) == 0:
-					print i * 100 / len(photonpops) + 1
-
 			foutpop.close()
 			foutx.close()
 
 			print 'Files saved!'
 	else:
-		T = 5 #MUST BE FLOAT, lenght of sim time
+		T = 50. #MUST BE FLOAT, lenght of sim time
 		transtime = 0.1 #drop transients, so time to start counting data
 		samptime = 0.00001
 		sampspersec = 1 / samptime #number of samples to collect
