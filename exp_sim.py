@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import random
 import time
+import math
 
 
 '''
@@ -33,7 +34,7 @@ lambda0timesTd = 3200 #Metric given in Aaron's paper
 lambda0 = lambda0timesTd / Td
 mu = 1 / lambda0 #Poisson interarrival time average
 transcount = 100 #How many Td's to wait for transients to die
-n = 1000000 #Photons to generate
+n = 5000000 #Photons to generate
 #Histogram parameters
 w = Td / 4
 binw = w / 20
@@ -41,7 +42,9 @@ offset = int(transcount * Td / binw)
 
 simulation = False
 deterministic = False
-filelist = ["betaTd=0.0","betaTd=1.0","betaTd=2.0","betaTd=3.0","betaTd=4.0","betaTd=5.0","betaTd=6.0","betaTd=7.0","betaTd=8.0","betaTd=9.0",]
+#filelist = ["lambda0Td=" + str(x) for x in [1000,1500,2000,2500,3000,3500,4000,5000,10000,20000]]
+filelist = ["3200big"]
+histogram = True
 autocorr = False
 poincare = True
 attractor3d = False
@@ -70,7 +73,7 @@ def movingwindowcalc(t):
 #Get histograms
 ####################################
 def getmovingwindow(photonpops):
-	binno = int(T / binw) - offset
+	binno = int(T / binw) - offset + 1
 	movingwindow = [0] * (binno)
 	#print binno
 
@@ -128,53 +131,63 @@ def getautocorr(Nw, deterministic=False):
 
 #Poincare section
 ################################
-def getpoincare(Nw, poincaretimes, deterministic=False):
+def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
 	if not deterministic:
-		if lambda0timesTd < 13:
+		if ltTd < 13:
 			pbinw = 1
 			maxp = 8
-		elif lambda0timesTd < 210:
+		elif ltTd < 21:
 			pbinw = 1
 			maxp = 80
 		else:
 			pbinw = 4
-			maxp = 800
+			maxp = int(math.ceil(ltTd / 4 / pbinw) * pbinw)
 
 		movingwindow = Nw
 		psec = [[int(_) for _ in x] for x in np.zeros((maxp / pbinw, maxp / pbinw))] #(N_w(t), N_w(t - Td/4))
+		pslice = [0 for x in range(maxp / 2 / pbinw)]
+		#The slice we're taking is y = maxp -2(x - maxp / 4)
 		for ptime in poincaretimes:
 			if ptime >= transcount * Td + Td / 4:
-				nwp = movingwindow[int(ptime / binw) - offset] #cause we already chopped off a transcount
-				nwpt = movingwindow[int(ptime / binw) - offset - int(Td / 4 / binw)]
+				#print str(int(ptime / binw) - offset) + "," + str(len(movingwindow))
+				nwp = movingwindowcalc(ptime) #cause we already chopped off a transcount
+				nwpt = movingwindowcalc(ptime - Td / 4)
 				if nwp >= maxp or nwpt >= maxp:
 					#Don't wanna deal with outliers
 					continue
+				#print str(nwp) + "," + str(nwpt) + "," + str(maxp)
 				psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
+				if int((maxp - 2*(nwp - maxp / 4)) / pbinw) == int(nwpt / pbinw):
+					print str(nwp) + "," + str(nwpt)
+					pslice[int(nwp - maxp / 4) / pbinw] += 1
 
-		print 'Poincare section done!'
+		print 'Poincare section and slice done!'
 	else:
 		intensities = Nw
 		pbinw = 0.005
 		maxp = 1
 		psec = [[int(_) for _ in x] for x in np.zeros((maxp / pbinw, maxp / pbinw))] #(N_w(t), N_w(t - Td/4))
+		pslice = [0 for x in range(int(maxp / pbinw))]
 		for ptime in poincaretimes:
 			if ptime > Td:
 				nwp = intensities[int((ptime - transtime) * sampspersec)]
 				nwpt = intensities[int((ptime - transtime - Td / 4) * sampspersec)]
 				psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
+				pslice[int(nwp / pbinw)] += 1
 
-		print 'Poincare section done!'
+		print 'Poincare section and slice done!'
 
-	return psec
+	return psec, pslice, range(len(pslice))
 
 def get3dattractor(Nw, deterministic=False):
 	#3D Diagram
 	bigplot = [[],[],[]]
 	if deterministic:
 		for i in range(int(Td * sampspersec / 2), 20000):
-			bigplot[0].append(intensities[i])
-			bigplot[1].append(intensities[i - int(Td / 4 * sampspersec)])
-			bigplot[2].append(intensities[i - int(2 * Td / 4 * sampspersec)])
+			tt = transcount * Td + binw * i
+			bigplot[0].append(movingwindowcalc(tt))
+			bigplot[1].append(movingwindowcalc(tt - Td / 4))
+			bigplot[2].append(movingwindowcalc(tt - 2 * Td / 4))
 	else:
 		for i in range(int(2 * Td / 4 / binw),20000):
 			bigplot[0].append(Nw[i])
@@ -212,34 +225,36 @@ def getvariance(photonpops):
 
 #Poincare Slice
 ####################################
+def showgraphs(Nw, timegraph, poincaretimes, ltTd, deterministic):
+	if histogram:
+		plt.figure(1)
+		if deterministic:
+			plt.subplot(311)
+			plt.title('Deterministic')
+			plt.xlim([0,T - transtime])
+			plt.plot(timegraph, intensities)
+			plt.subplot(312)
+			plt.hist(intensities, bins = 20)
+		else:
+			plt.subplot(311)
+			plt.title('lambda0 * Td = ' + str(lambda0timesTd))
+			plt.xlim([0,T - transcount * Td])
+			plt.plot(timegraph, Nw)
+			plt.subplot(312)
+			plt.hist(movingwindow, bins = 30)
 
-
-def showgraphs(Nw, timegraph, poincaretimes, deterministic):
-	plt.figure(1)
-	if deterministic:
-		plt.subplot(311)
-		plt.title('Deterministic')
-		plt.xlim([0,T - transtime])
-		plt.plot(timegraph, intensities)
-		plt.subplot(312)
-		plt.hist(intensities, bins = 20)
-	else:
-		plt.subplot(311)
-		plt.title('lambda0 * Td = ' + str(lambda0timesTd))
-		plt.xlim([0,T - transcount * Td])
-		plt.plot(timegraph, Nw)
-		plt.subplot(312)
-		plt.hist(movingwindow, bins = 30)
-
-	if autocorr:
-		plt.subplot(313)
-		Cgraph = getautocorr(Nw, deterministic)
-		plt.plot(Cgraph)
+		if autocorr:
+			plt.subplot(313)
+			Cgraph = getautocorr(Nw, deterministic)
+			plt.plot(Cgraph)
 
 	if poincare:
-		psec = getpoincare(Nw, poincaretimes, deterministic)
+		psec, pslice, pbounds = getpoincare(Nw, poincaretimes, ltTd, deterministic)
 		plt.figure(2)
+		plt.subplot(211)
 		plt.pcolor(np.array(psec))
+		plt.subplot(212)
+		plt.scatter(pbounds, pslice)
 
 	if attractor3d:
 		bigplot = get3dattractor(Nw, deterministic)
@@ -256,13 +271,14 @@ def showgraphs(Nw, timegraph, poincaretimes, deterministic):
 
 if simulation:
 	if not deterministic:
-		for betavary in range(10):
-			betatimesTd = float(betavary) #this is the actual measurement that Aaron used, different than what he claims
-			print 'betatimesTd = ' + str(betatimesTd)
-			beta = betatimesTd / Td #this is the real beta value, in the thousands.
-			foutpop = open('betaTd=' + str(betatimesTd) + 'pop.out','w')
-			foutx = open('betaTd=' + str(betatimesTd) + 'xs.out','w') #x-simplified
+		for lambda0timesTd in [1000,1500,2000,2500,3000,3500,4000,5000,10000,20000]:
+			print lambda0timesTd
+			lambda0 = lambda0timesTd / Td
+			mu = 1 / lambda0 #Poisson interarrival time average
+			n = 3000 * lambda0timesTd
 
+			foutpop = open('lambda0Td=' + str(lambda0timesTd) + 'pop.out','w')
+			foutx = open('lambda0Td=' + str(lambda0timesTd) + 'xs.out','w') #x-simplified
 			#Generate photon times!
 			taus = np.random.exponential (mu , n) #Interarrival times
 			photontimes = np.cumsum(taus) #Cumulative sum, times of arrival at modulator
@@ -345,6 +361,8 @@ if simulation:
 
 			foutpop.close()
 			foutx.close()
+
+			print 'Files saved!'
 	else:
 		T = 5 #MUST BE FLOAT, lenght of sim time
 		transtime = 0.1 #drop transients, so time to start counting data
@@ -393,6 +411,8 @@ if simulation:
 			x2hist.pop(0)
 			t += dt
 		fout.close()
+
+		print 'Files saved!'
 else:
 	if not deterministic:
 		for filename in filelist:
@@ -409,13 +429,17 @@ else:
 			for i in range(len(photonpops)):
 				photonpops[i] = float(photonpops[i])
 			n = int(float(runinfo[2]))
-			lambda0timesTd = float(runinfo[1])
+			lambda0timesTd = int(float(runinfo[1]))
 			T = float(runinfo[0])
 
 			#Graph
-			timegraph, movingwindow = getmovingwindow(photonpops)
 			print filename
-			showgraphs(movingwindow, timegraph, poincaretimes, deterministic)
+			if histogram:
+				timegraph, movingwindow = getmovingwindow(photonpops)
+			else:
+				timegraph = []
+				movingwindow = []
+			showgraphs(movingwindow, timegraph, poincaretimes, lambda0timesTd, deterministic)
 	else:
 		transtime = 0.1
 		fin = open('detint.out','r')
@@ -430,4 +454,4 @@ else:
 		poincaretimes = []
 		for line in finxs:
 			poincaretimes.append(float(line))
-print 'Now graphing...'
+print 'Program done...'
