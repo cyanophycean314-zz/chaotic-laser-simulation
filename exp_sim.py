@@ -43,7 +43,7 @@ maxp = 1
 pbinw = 1
 
 simulation = False
-deterministic = False
+deterministic = True
 filelist = ["lambda0Td=" + str(x) for x in [1000,1500,2000,2500,3000,3500,4000,5000,10000]]
 #filelist = ["lambda0Td=10000"]
 histogram = False
@@ -184,7 +184,7 @@ def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
 				psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
 				if abs(int((maxp - 2*(nwp - maxp / 4)) / pbinw) - int(nwpt / pbinw)) <= 1:
 					print str(nwp) + "," + str(nwpt)
-					pslice[int(nwp - maxp / 4) / pbinw] += 1
+					pslice[int(nwp - maxp / 4 / pbinw)] += 1
 
 		print 'Poincare section and slice done!'
 	print maxp
@@ -469,4 +469,7 @@ else:
 		poincaretimes = []
 		for line in finxs:
 			poincaretimes.append(float(line))
+
+		#Graph
+		showgraphs(intensities, timegraph, poincaretimes, 0, deterministic)
 print 'Program done...'
