@@ -400,6 +400,7 @@ if simulation:
 		intensities = []
 		timegraph = []
 		poincaretimes = []
+		xdiff = 0
 		while t < T:
 			x1 += (- 1 / T1 * x1 + beta * np.sin(x1hist[0] - x2hist[0] + phi) ** 2) * dt
 			x2 += (- 1 / T2 * x2 + beta * np.sin(x1hist[0] - x2hist[0] + phi) ** 2) * dt
@@ -408,9 +409,10 @@ if simulation:
 				intensities.append(np.sin(x1hist[0] - x2hist[0] + phi) ** 2)
 				timegraph.append(t - transtime)
 				fout.write("{:6f}\n".format(np.sin(x1hist[0] - x2hist[0] + phi) ** 2))
-				if abs(x1 - x2 - np.pi) < xeps:
+				if (x1 - x2 - np.pi) * xdiff < 0:
 					foutx.write("{:7f}\n".format(t))
 					poincaretimes.append(t)
+				xdiff = x1 - x2 - np.pi
 
 			#Progress
 			if int(t / dt) % int(float(T) / 50 / dt) == 0:
