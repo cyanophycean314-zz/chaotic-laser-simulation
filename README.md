@@ -6,5 +6,13 @@ hardvariancefinder is an old version of Exp_sim that tries to find the variance 
 Kullbackleibler is for finding Kullback-leibler divergences
 
 Data Batches
+0 - First run.
+	pop and x - Records photon pops and x1, x2
 1 - Various photon rates from 12.5 to 3200, generally small. Also includes deterministic case
+	pop and xs - Records photon pops and times for x1 - x2 = pi
 2 - Various beta values from 0 to 9
+	pop and xs - Records photon pops and times for x1 - x2 = pi
+3 - Various photon rates from 1000 to 20000
+	pop and xs - Records photon pops and times for x1 - x2 = pi
+4 - Various photon rates from 10 to 30000
+	pop and xs and v - Records photon pops and the times for x1 - x2 = pi and voltages

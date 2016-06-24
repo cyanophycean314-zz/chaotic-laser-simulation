@@ -17,7 +17,7 @@ Loop
 '''
 
 #The (basically unchangeable conditions)
-dt = 0.000005 #Time interval (around the size of mu for lambda0 * Td = 3200)
+dt = 0.00002 #Time interval (around the size of mu for lambda0 * Td = 3200)
 samptime = 0.00002 #How often to take a sample
 sampspersec = 1 / samptime #Inverse
 Td = 0.001734 #Time delay
@@ -29,14 +29,14 @@ phi = np.pi / 4 #Filter phase displacement
 #Simulation parameters
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
-deterministic = False
+deterministic = True
 points = False #Count pops
-T = 15. #seconds to simulate
+T = 1000. #seconds to simulate
 
 if not deterministic:
-	filelist = [3200, 5000, 7000, 10000, 12000, 15000, 20000, 30000]
+	filelist = [1000,2000,3200, 5000, 7000, 10000, 15000, 20000, 30000]
 else:
-	filelist = ["det"]
+	filelist = ["detfancy"]
 
 for filename in filelist:
 	t = 0
@@ -48,11 +48,17 @@ for filename in filelist:
 	xdiff = 0
 	pval = np.pi
 	ctr = 0
+	ctr2 = 0
+	N2 = int(Td / samptime / 4)
+	vhist = [0] * N2 #raw voltage over last Td / 4
+	vhistsum = 0
+	vlag = [2] * N2 #what the smoothed voltage was one Td / 4 ago
+	N3 = 2 * N2
+	vhisttwo = [0] * N3
 
 	foutv = open(str(filename) + "v.out","w")
+	foutvf = open(str(filename) + "vf.out","w")
 	foutx = open(str(filename) + "xs.out","w")
-
-	foutv.write(str(T) + "\n")
 
 	timestart = time.clock()
 
@@ -70,6 +76,8 @@ for filename in filelist:
 		dec1 = np.exp(-dt/T1)
 		dec2 = np.exp(-dt/T2)
 
+	foutv.write(str(T) + "\n")
+
 	while t < T:
 		I = (np.sin(x1hist[ctr % N] - x2hist[ctr % N] + phi)) ** 2
 
@@ -78,24 +86,35 @@ for filename in filelist:
 			x1 += (-1 / T1 * x1 + beta * I) * dt
 			x2 += (-1 / T2 * x2 + beta * I) * dt
 		else:
-			while t > lastt + taus[index]:
+			while index < len(taus) and t > lastt + taus[index]:
 				if random.random() <= I:
 					x1 += beta / lambda0
 					x2 += beta / lambda0
 					if points and t >= transtime:
 						foutpop.write("{:6f}\n".format(t))
+				lastt += taus[index]
 				index += 1
-				lastt = lastt + taus[index]
 
 			x1 *= dec1
 			x2 *= dec2
 
 		#Record data
-		if t >= transtime and int(t / dt) % int(samptime / dt) == 0:
-			foutv.write("{:6f}\n".format(x1 - x2))
-			if (x1 - x2 - pval) * xdiff < 0:
-				foutx.write("{:6f}\n".format(t))
+		if int(t / dt) % int(samptime / dt) == 0:
+			if t >= transtime:
+				foutv.write("{:6f}\n".format(x1 - x2))
+				if (x1 - x2 - pval) * xdiff < 0:
+					foutx.write("{:6f}\n".format(t))
+					'''
+					#foutvf.write("{:6f} {:6f}\n".format(vhistsum / N2, vlag[(ctr2 % N2)]))
+					#foutvf.write("{:6f} {:6f}\n".format(np.average(vhisttwo[N2:]), np.average(vhisttwo[:N2])))
+					#print "{:6f}, {:6f} {:6f} {:6f} {:6f}".format(x1 - x2, vhistsum / N2, np.average(vhisttwo[N2:]), vlag[ctr2 % N2], np.average(vhisttwo[:N2]))
+			vlag[(ctr2 % N2)] = vhistsum / N2
+			vhistsum += (x1 - x2) - vhist[ctr2 % N2]
+			vhist[(ctr2 % N2)] = x1 - x2
 			xdiff = x1 - x2 - pval
+			vhisttwo.append(x1 - x2)
+			vhisttwo.pop(0)'''
+			ctr2 += 1
 
 		#Progress
 		if int(t / dt) % int(T / 50. / dt) == 0:
@@ -109,6 +128,7 @@ for filename in filelist:
 
 	foutv.close()
 	foutx.close()
+	foutvf.close()
 	if points:
 		foutpop.close()
 

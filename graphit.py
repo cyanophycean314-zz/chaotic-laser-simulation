@@ -22,16 +22,25 @@ beta = betatimesTd / Td #this is the real beta value, in the thousands.
 T = 5 #seconds to simulate
 deterministic = False
 
-filelist = [3200]
+filelist = [2000]#[1500, 2000, 2500, 3200, 5000, 7000, 10000, 12000, 15000, 20000, 30000]
 histogram = False
 autocorr = False
 poincare = True
 attractor3d = False
 points = False #legacy mode - look at photon counts
+fancy = True
 
 for filename in filelist:
+	print filename
 	finv = open(str(filename) + "v.out","r")
 	finx = open(str(filename) + "xs.out","r")
+	if fancy:
+		ppoints = [[],[]]
+		finvf = open(str(filename) + "vf.out","r")
+		for line in finvf:
+			vwp, vwpt = line.split()
+			ppoints[0].append(float(vwp))
+			ppoints[1].append(float(vwpt))
 
 	voltages = []
 	for line in finv:
@@ -43,6 +52,7 @@ for filename in filelist:
 	rawvoltages = voltages
 	voltages = smoothedvoltages
 	timegraph = [transtime + Td / 4 + x * samptime for x in range(len(smoothedvoltages))]
+	print 'Voltage smoothed!'
 
 	poincaretimes = []
 	for line in finx:
@@ -52,6 +62,7 @@ for filename in filelist:
 	while max(poincaretimes) > timegraph[len(timegraph) - 1]:
 		poincaretimes.pop()
 
+	print 'Let the graphing begin!'
 	#Graph the stuff
 	if histogram:
 		plt.figure(1)
@@ -94,7 +105,7 @@ for filename in filelist:
 		print 'Autocorrelation done!'
 
 	if poincare:
-		pbinw = 0.05
+		pbinw = 0.02
 		minp = 0.5
 		maxp = 6.
 		ran = maxp - minp
@@ -102,6 +113,7 @@ for filename in filelist:
 		psec = [[0 for _ in range(num)] for x in range(num)]
 		delay = Td / 4
 
+		thickness = 0.1
 		slicer = [[minp + ran / 4, minp + 3 * ran / 4], [minp, maxp]]
 		slope = (slicer[1][1] - slicer[1][0]) / (slicer[0][1] - slicer[0][0])
 		pslice = [0 for i in range(int((slicer[0][1] - slicer[0][0]) / pbinw))]
@@ -111,26 +123,20 @@ for filename in filelist:
 				vwp = voltages[int(pcorr * sampspersec)]
 				vwpt = voltages[int((pcorr - delay) * sampspersec)]
 
-				if vwp >= maxp:
-					vwp -= pbinw / 2
-				elif vwp <= minp:
-					vwp += pbinw / 2
-				if vwpt >= maxp:
-					vwpt -= pbinw / 2
-				elif vwpt <= minp:
-					vwpt += pbinw / 2
+				if vwp >= maxp or vwpt >= maxp or vwp <= minp or vwpt <= minp:
+					continue
 
 				psec[int((vwp - minp) / pbinw)][int((vwpt - minp) / pbinw)] += 1
 
 				#1 bin margin of error
 				y = slicer[1][0] + slope * (vwp - slicer[0][0])
 				#print "{} {}".format(int(y / pbinw), int(vwpt / pbinw))
-				if abs(int(y / pbinw) - int(vwpt / pbinw)) <= 1:
+				if abs(y - vwpt) <= thickness:
 					pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
 
 		plt.figure(3)
 		plt.subplot(211)
-		plt.title(str(filename) + ", bin width = " + str(pbinw))
+		plt.title(str(filename) + ", bin width = " + str(pbinw) + ", points = " + str(len(poincaretimes)))
 		plt.ylim([0,num])
 		plt.xlim([0,num])
 
@@ -141,6 +147,45 @@ for filename in filelist:
 		plt.scatter(range(len(pslice)), pslice)
 
 		print 'Poincare section and slice done!'
+
+	if fancy:
+		pbinw = 0.02
+		minp = 0.5
+		maxp = 6.
+		ran = maxp - minp
+		num = int(ran / pbinw)
+		psec = [[0 for _ in range(num)] for x in range(num)]
+
+		thickness = 0.1
+		slicer = [[minp + ran / 4, minp + 3 * ran / 4], [minp, maxp]]
+		slope = (slicer[1][1] - slicer[1][0]) / (slicer[0][1] - slicer[0][0])
+		pslice = [0 for i in range(int((slicer[0][1] - slicer[0][0]) / pbinw))]
+		for i in range(len(ppoints[0])):
+			vwp = ppoints[0][i]
+			vwpt = ppoints[1][i]
+			psec[int((vwp - minp) / pbinw)][int((vwpt - minp) / pbinw)] += 1
+
+			#1 bin margin of error
+			y = slicer[1][0] + slope * (vwp - slicer[0][0])
+			#print "{} {}".format(int(y / pbinw), int(vwpt / pbinw))
+			if abs(y - vwpt) <= thickness:
+				pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
+
+		plt.figure(8)
+		plt.subplot(211)
+		plt.title(str(filename) + ", bin width = " + str(pbinw) + ", pts = " + str(len(ppoints[0])))
+		plt.ylim([0,num])
+		plt.xlim([0,num])
+
+		plt.pcolor(np.array(psec))
+		scaledslicer = (np.array(slicer) - minp) / pbinw
+		plt.plot(scaledslicer[0], scaledslicer[1], color = 'r')
+		plt.title('T = ' + str(T))
+		plt.subplot(212)
+		plt.scatter(range(len(pslice)), pslice)
+
+		print 'Poincare section and slice done!'
+
 
 	if attractor3d:
 		bigplot = [[],[],[]]
