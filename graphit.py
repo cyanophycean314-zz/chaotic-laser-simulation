@@ -23,47 +23,37 @@ T = 5 #seconds to simulate
 #deterministic = True
 
 filelist = ["detBIG"]#[2000]#[1500, 2000, 2500, 3200, 5000, 7000, 10000, 12000, 15000, 20000, 30000]
-histogram = True
-autocorr = True
+histogram = False
+autocorr = False
 poincare = True
-attractor3d = True
+attractor3d = False
 points = False #legacy mode - look at photon counts
-fancy = False #use simulation values of whatever
 
 for filename in filelist:
 	print filename
 	finv = open(str(filename) + "v.out","r")
+	finvt = open(str(filename) + "vt.out","r")
 	finx = open(str(filename) + "xs.out","r")
 
-	voltages = []
-	for line in finv:
-		voltages.append(float(line))
-	T = voltages.pop(0)
-	print 'Voltages read!'
+	if histogram:
+		voltages = []
+		for line in finv:
+			voltages.append(float(line))
+		T = voltages.pop(0)
+		print 'Voltages read!'
+
+	pvoltages = [[],[]]
+	T = float(finvt.readline())
+	for line in finvt:
+		vwp, vwpt = line.split()
+		pvoltages[0].append(float(vwp))
+		pvoltages[1].append(float(vwpt))
 
 	window = int(Td / 4 * sampspersec)
-	
-	runningsum = np.sum(voltages[:window])
-	smoothedvoltages = []
-	index = 0
-	while index + window < len(voltages):
-		smoothedvoltages.append(runningsum / window)
-		runningsum += voltages[index + window] - voltages[index]
-		index += 1
-	#smoothedvoltages = [np.mean(voltages[i - window: i]) for i in range(window, len(voltages))]
-	#rawvoltages = voltages
-	#voltages = []
-	timegraph = [transtime + x * samptime for x in range(len(voltages))]
-	smoothedtimegraph = [transtime + Td / 4 + x * samptime for x in range(len(voltages))]
-	print 'Voltage smoothed!'
 
 	poincaretimes = []
 	for line in finx:
 		poincaretimes.append(float(line))
-		#print rawvoltages[int((float(line) - transtime) * sampspersec)]
-		#print voltages[int((float(line) - transtime - Td / 4) * sampspersec)]
-	#while max(poincaretimes) > timegraph[len(timegraph) - 1]:
-	#	poincaretimes.pop()
 
 	print 'Let the graphing begin!'
 	#Graph the stuff
@@ -109,8 +99,8 @@ for filename in filelist:
 
 	if poincare:
 		pbinw = 0.01
-		minp = 0.5
-		maxp = 6.
+		minp = 1.
+		maxp = 5.
 		ran = maxp - minp
 		num = int(ran / pbinw)
 		psec = [[0 for _ in range(num)] for x in range(num)]
@@ -121,73 +111,20 @@ for filename in filelist:
 		slope = (slicer[1][1] - slicer[1][0]) / (slicer[0][1] - slicer[0][0])
 		pslice = [0 for i in range(int((slicer[0][1] - slicer[0][0]) / pbinw))]
 
-		for ptime in poincaretimes:
-			if ptime > timegraph[0] + delay:
-				pcorr = ptime - timegraph[0] - Td / 4
-				vwp = voltages[int(pcorr * sampspersec)]
-				vwpt = voltages[int((pcorr - delay) * sampspersec)]
-				if vwp >= maxp or vwpt >= maxp or vwp <= minp or vwpt <= minp:
-					continue
-				psec[int((vwp - minp) / pbinw)][int((vwpt - minp) / pbinw)] += 1
-				#1 bin margin of error
-				y = slicer[1][0] + slope * (vwp - slicer[0][0])
-				#print "{} {}".format(int(y / pbinw), int(vwpt / pbinw))
-				if abs(int((y - minp) / pbinw) - int((vwpt - minp) / pbinw)) <= thickness / pbinw:
-					pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
-					#print int((vwp - minp) / pbinw)
-					#print int((vwp - slicer[0][0]) / pbinw)
-					#print int((vwpt - minp) / pbinw)
+		for i in range(len(pvoltages[0])):
+			vwp = pvoltages[0][i]
+			vwpt = pvoltages[1][i]
+			if vwp >= maxp or vwpt >= maxp or vwp <= minp or vwpt <= minp:
+				continue
+			psec[int((vwp - minp) / pbinw)][int((vwpt - minp) / pbinw)] += 1
+
+			y = slicer[1][0] + slope * (vwp - slicer[0][0])
+			if abs(int((y - minp) / pbinw) - int((vwpt - minp) / pbinw)) <= thickness / pbinw:
+				pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
 
 		plt.figure(3)
 		plt.subplot(211)
 		plt.title(str(filename) + ", bin width = " + str(pbinw) + ", points = " + str(len(poincaretimes)))
-		plt.ylim([0,num])
-		plt.xlim([0,num])
-		plt.pcolor(np.transpose(np.array(psec)))
-		scaledslicer = (np.array(slicer) - minp) / pbinw
-		plt.plot(scaledslicer[0], scaledslicer[1], color = 'r')
-		plt.subplot(212)
-		plt.title("T = " + str(T) + ", thick = " + str(thickness))
-		plt.xlim([0,len(pslice)])
-		plt.bar(range(len(pslice)), pslice)
-		print 'Poincare section done!'
-
-	if poincare:
-		###########################################
-		#Smooth test
-		pbinw = 0.01
-		minp = 0.5
-		maxp = 6.
-		ran = maxp - minp
-		num = int(ran / pbinw)
-		psec = [[0 for _ in range(num)] for x in range(num)]
-		delay = Td / 4
-
-		thickness = 0.01
-		slicer = [[minp, maxp], [minp + ran / 2., minp  + ran / 2.]]
-		slope = (slicer[1][1] - slicer[1][0]) / (slicer[0][1] - slicer[0][0])
-		pslice = [0 for i in range(int((slicer[0][1] - slicer[0][0]) / pbinw))]
-
-		for ptime in poincaretimes:
-			if ptime > smoothedtimegraph[0] + delay:
-				pcorr = ptime - smoothedtimegraph[0] - Td / 4
-				vwp = smoothedvoltages[int(pcorr * sampspersec)]
-				vwpt = smoothedvoltages[int((pcorr - delay) * sampspersec)]
-				if vwp >= maxp or vwpt >= maxp or vwp <= minp or vwpt <= minp:
-					continue
-				psec[int((vwp - minp) / pbinw)][int((vwpt - minp) / pbinw)] += 1
-				#1 bin margin of error
-				y = slicer[1][0] + slope * (vwp - slicer[0][0])
-				#print "{} {}".format(int(y / pbinw), int(vwpt / pbinw))
-				if abs(int((y - minp) / pbinw) - int((vwpt - minp) / pbinw)) <= thickness / pbinw:
-					pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
-					#print int((vwp - minp) / pbinw)
-					#print int((vwp - slicer[0][0]) / pbinw)
-					#print int((vwpt - minp) / pbinw)
-
-		plt.figure(9)
-		plt.subplot(211)
-		plt.title(str(filename) + " SMOOOOTH, bin width = " + str(pbinw) + ", points = " + str(len(poincaretimes)))
 		plt.ylim([0,num])
 		plt.xlim([0,num])
 		plt.pcolor(np.transpose(np.array(psec)))
