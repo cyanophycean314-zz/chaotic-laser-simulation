@@ -31,7 +31,7 @@ betatimesTd = 8.87 #this is the actual measurement that Aaron used, different th
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 deterministic = True
 points = False #Count pops
-T = 200. #seconds to simulate
+T = 2000. #seconds to simulate
 
 if not deterministic:
 	filelist = [1000,2000,3200, 5000, 7000, 10000, 15000, 20000, 30000]
