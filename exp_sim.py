@@ -29,12 +29,12 @@ phi = np.pi / 4 #Filter phase displacement
 #Simulation parameters
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
-deterministic = True
+deterministic = False
 points = False #Count pops
-T = 2000. #seconds to simulate
+T = 50. #seconds to simulate
 
 if not deterministic:
-	filelist = [1000,2000,3200, 5000, 7000, 10000, 15000, 20000, 30000]
+	filelist = [1500]
 else:
 	filelist = ["detBIG"]
 
@@ -67,17 +67,19 @@ for filename in filelist:
 		lambda0timesTd = int(filename) #Metric given in Aaron's paper
 		lambda0 = lambda0timesTd / Td
 		mu = 1 / lambda0 #Poisson interarrival time average
-		n = T / mu
-		taus = np.random.exponential(mu, n)
-		T = np.sum(taus)
+		chunks = 100
+		chunklen = int(T / mu / chunks)
+		n = chunks * chunklen
+		chunkno = 0
+		taus = np.random.exponential(mu, chunklen)
 		index = 0 #photon index
 		lastt = 0
 		dec1 = np.exp(-dt/T1)
 		dec2 = np.exp(-dt/T2)
 
-	foutvt.write(str(T) + "\n")
+	foutvt.write(str(T) + "\n") #only predicted, you never know for sure :O
 
-	while t < T:
+	while chunkno < chunks:
 		I = (np.sin(x1hist[ctr % N] - x2hist[ctr % N] + phi)) ** 2
 
 		#Evolution of x1, x2
@@ -93,6 +95,10 @@ for filename in filelist:
 						foutpop.write("{:6f}\n".format(t))
 				lastt += taus[index]
 				index += 1
+				if index >= len(taus):
+					index = 0
+					taus = np.random.exponential(mu, chunklen)
+					chunkno += 1
 
 			x1 *= dec1
 			x2 *= dec2

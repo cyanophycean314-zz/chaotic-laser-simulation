@@ -20,22 +20,50 @@ phi = np.pi / 4 #Filter phase displacement
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 T = 5 #seconds to simulate
-#deterministic = True
 
-filelist = ["detBIG"]#[2000]#[1500, 2000, 2500, 3200, 5000, 7000, 10000, 12000, 15000, 20000, 30000]
+filelist = [250,500,1000,1500,2000,3200, 5000,10000,20000,30000]
 histogram = False
 autocorr = False
 poincare = True
 attractor3d = False
 points = False #legacy mode - look at photon counts
+divs = True
+
+if divs:
+	def getkldiv(distr):
+		#Kullback-Leibler
+		distr = [float(x) / np.sum(distr) for x in distr] #Normalize
+		uniformprob = np.ones(len(distr)) / len(distr)
+		#kldiv = sum_i P_i log (P_i / Q_i)
+		kldiv = 0
+		for i in range(len(distr)):
+			if distr[i] != 0:
+				kldiv += distr[i] * np.log(distr[i] / uniformprob[i])
+		print kldiv
+		return kldiv
+
+	def getksdiv(distr):
+		distr = [float(x) / np.sum(distr) for x in distr] #Normalize
+		distrcdf = np.cumsum(distr)
+		uniformprob = np.ones(len(distr)) / len(distr)
+		uniformcdf = np.cumsum(uniformprob)
+		#ksdiv = sup_x | F_n(x) - F(x) |
+		ksdiv = 0
+		for i in range(len(distr)):
+			ksdiv = max(ksdiv, abs(distrcdf[i] - uniformcdf[i]))
+		print ksdiv
+		return ksdiv
+
+	kldivs = []
+	ksdivs = []
 
 for filename in filelist:
 	print filename
-	finv = open(str(filename) + "v.out","r")
 	finvt = open(str(filename) + "vt.out","r")
 	finx = open(str(filename) + "xs.out","r")
 
 	if histogram:
+		finv = open(str(filename) + "v.out","r")
 		voltages = []
 		for line in finv:
 			voltages.append(float(line))
@@ -98,7 +126,7 @@ for filename in filelist:
 		print 'Autocorrelation done!'
 
 	if poincare:
-		pbinw = 0.001
+		pbinw = 0.008
 		minp = 1.
 		maxp = 5.
 		ran = maxp - minp
@@ -106,9 +134,9 @@ for filename in filelist:
 		psec = [[0 for _ in range(num)] for x in range(num)]
 		delay = Td / 4
 
-		vertical = True #True if slope gets too high
-		thickness = 0.005
-		slicer = [[minp + ran / 2, minp + ran / 2], [minp, maxp]]
+		vertical = False #True if slope gets too high
+		thickness = 3 #How many pbinws
+		slicer = [[minp, maxp], [minp + 5.5 / 8 * ran, minp + 5.5 / 8 * ran]]
 		if vertical:
 			slopey = (slicer[0][1] - slicer[0][0]) / (slicer[1][1] - slicer[1][0])
 			pslice = [0 for i in range(int((slicer[1][1] - slicer[1][0]) / pbinw))]
@@ -126,12 +154,12 @@ for filename in filelist:
 			if vertical:
 				orig = vwpt
 				x = slicer[0][0] + slopey * (vwpt - slicer[1][0])
-				if abs(int((x - minp) / pbinw) - int((vwp - minp) / pbinw)) <= thickness / pbinw:
+				if abs(int((x - minp) / pbinw) - int((vwp - minp) / pbinw)) <= thickness:
 					pslice[int((vwpt - slicer[1][0]) / pbinw)] += 1
 			else:
 				orig = vwp
 				y = slicer[1][0] + slope * (vwp - slicer[0][0])
-				if abs(int((y - minp) / pbinw) - int((vwpt - minp) / pbinw)) <= thickness / pbinw:
+				if abs(int((y - minp) / pbinw) - int((vwpt - minp) / pbinw)) <= thickness:
 					pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
 
 		plt.figure(3)
@@ -151,6 +179,11 @@ for filename in filelist:
 			plt.ylim([0,len(pslice)])
 			plt.barh(range(len(pslice)), pslice)			
 		print 'Poincare section done!'
+
+		if divs:
+			trimmed = np.trim_zeros(pslice)
+			kldivs.append(getkldiv(trimmed))
+			ksdivs.append(getksdiv(trimmed))
 
 	if attractor3d:
 		bigplot = [[],[],[]]
@@ -208,6 +241,16 @@ for filename in filelist:
 		plt.pcolor(np.array(psec))
 		plt.show()
 
+	#plt.show()
+
+if divs:
+	plt.figure(6)
+	plt.subplot(211)
+	plt.title("Kullback-Leibler distance")
+	plt.plot(kldivs)
+	plt.subplot(212)
+	plt.title("Kolmogorov-Smirnov distance")
+	plt.plot(ksdivs)
 	plt.show()
 
 print 'Program done'
