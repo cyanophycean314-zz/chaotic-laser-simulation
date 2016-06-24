@@ -34,13 +34,6 @@ for filename in filelist:
 	print filename
 	finv = open(str(filename) + "v.out","r")
 	finx = open(str(filename) + "xs.out","r")
-	if fancy:
-		ppoints = [[],[]]
-		finvf = open(str(filename) + "vf.out","r")
-		for line in finvf:
-			vwp, vwpt = line.split()
-			ppoints[0].append(float(vwp))
-			ppoints[1].append(float(vwpt))
 
 	voltages = []
 	for line in finv:
@@ -205,44 +198,6 @@ for filename in filelist:
 		plt.xlim([0,len(pslice)])
 		plt.bar(range(len(pslice)), pslice)
 		print 'Poincare section done!'
-
-	if fancy:
-		pbinw = 0.02
-		minp = 0.5
-		maxp = 6.
-		ran = maxp - minp
-		num = int(ran / pbinw)
-		psec = [[0 for _ in range(num)] for x in range(num)]
-
-		thickness = 0.1
-		slicer = [[minp + ran / 4, minp + 3 * ran / 4], [minp, maxp]]
-		slope = (slicer[1][1] - slicer[1][0]) / (slicer[0][1] - slicer[0][0])
-		pslice = [0 for i in range(int((slicer[0][1] - slicer[0][0]) / pbinw))]
-		for i in range(len(ppoints[0])):
-			vwp = ppoints[0][i]
-			vwpt = ppoints[1][i]
-			psec[int((vwp - minp) / pbinw)][int((vwpt - minp) / pbinw)] += 1
-
-			#1 bin margin of error
-			y = slicer[1][0] + slope * (vwp - slicer[0][0])
-			#print "{} {}".format(int(y / pbinw), int(vwpt / pbinw))
-			if abs(y - vwpt) <= thickness:
-				pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
-
-		plt.figure(8)
-		plt.subplot(211)
-		plt.title(str(filename) + ", bin width = " + str(pbinw) + ", pts = " + str(len(ppoints[0])))
-		plt.ylim([0,num])
-		plt.xlim([0,num])
-
-		plt.pcolor(np.array(psec))
-		scaledslicer = (np.array(slicer) - minp) / pbinw
-		plt.plot(scaledslicer[0], scaledslicer[1], color = 'r')
-		plt.title('T = ' + str(T))
-		plt.subplot(212)
-		plt.scatter(range(len(pslice)), pslice)
-
-		print 'Poincare section and slice done!'
 
 	if attractor3d:
 		bigplot = [[],[],[]]
