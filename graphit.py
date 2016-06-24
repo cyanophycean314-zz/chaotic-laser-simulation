@@ -98,7 +98,7 @@ for filename in filelist:
 		print 'Autocorrelation done!'
 
 	if poincare:
-		pbinw = 0.01
+		pbinw = 0.001
 		minp = 1.
 		maxp = 5.
 		ran = maxp - minp
@@ -106,10 +106,15 @@ for filename in filelist:
 		psec = [[0 for _ in range(num)] for x in range(num)]
 		delay = Td / 4
 
-		thickness = 0.01
-		slicer = [[minp, maxp], [minp + ran / 2., minp  + ran / 2.]]
-		slope = (slicer[1][1] - slicer[1][0]) / (slicer[0][1] - slicer[0][0])
-		pslice = [0 for i in range(int((slicer[0][1] - slicer[0][0]) / pbinw))]
+		vertical = True #True if slope gets too high
+		thickness = 0.005
+		slicer = [[minp + ran / 2, minp + ran / 2], [minp, maxp]]
+		if vertical:
+			slopey = (slicer[0][1] - slicer[0][0]) / (slicer[1][1] - slicer[1][0])
+			pslice = [0 for i in range(int((slicer[1][1] - slicer[1][0]) / pbinw))]
+		else:
+			slope = (slicer[1][1] - slicer[1][0]) / (slicer[0][1] - slicer[0][0])
+			pslice = [0 for i in range(int((slicer[0][1] - slicer[0][0]) / pbinw))]
 
 		for i in range(len(pvoltages[0])):
 			vwp = pvoltages[0][i]
@@ -118,22 +123,33 @@ for filename in filelist:
 				continue
 			psec[int((vwp - minp) / pbinw)][int((vwpt - minp) / pbinw)] += 1
 
-			y = slicer[1][0] + slope * (vwp - slicer[0][0])
-			if abs(int((y - minp) / pbinw) - int((vwpt - minp) / pbinw)) <= thickness / pbinw:
-				pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
+			if vertical:
+				orig = vwpt
+				x = slicer[0][0] + slopey * (vwpt - slicer[1][0])
+				if abs(int((x - minp) / pbinw) - int((vwp - minp) / pbinw)) <= thickness / pbinw:
+					pslice[int((vwpt - slicer[1][0]) / pbinw)] += 1
+			else:
+				orig = vwp
+				y = slicer[1][0] + slope * (vwp - slicer[0][0])
+				if abs(int((y - minp) / pbinw) - int((vwpt - minp) / pbinw)) <= thickness / pbinw:
+					pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
 
 		plt.figure(3)
-		plt.subplot(211)
+		plt.subplot(121)
 		plt.title(str(filename) + ", bin width = " + str(pbinw) + ", points = " + str(len(poincaretimes)))
 		plt.ylim([0,num])
 		plt.xlim([0,num])
-		plt.pcolor(np.transpose(np.array(psec)))
+		plt.pcolormesh(np.transpose(np.array(psec)))
 		scaledslicer = (np.array(slicer) - minp) / pbinw
 		plt.plot(scaledslicer[0], scaledslicer[1], color = 'r')
-		plt.subplot(212)
+		plt.subplot(122)
 		plt.title("T = " + str(T) + ", thick = " + str(thickness))
-		plt.xlim([0,len(pslice)])
-		plt.bar(range(len(pslice)), pslice)
+		if not vertical:
+			plt.xlim([0,len(pslice)])
+			plt.bar(range(len(pslice)), pslice)
+		else:
+			plt.ylim([0,len(pslice)])
+			plt.barh(range(len(pslice)), pslice)			
 		print 'Poincare section done!'
 
 	if attractor3d:
