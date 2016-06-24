@@ -107,7 +107,7 @@ for filename in filelist:
 		pslice = [0 for i in range(int((slicer[0][1] - slicer[0][0]) / pbinw))]
 		for ptime in poincaretimes:
 			if ptime > timegraph[0] + delay:
-				pcorr = ptime - timegraph[0]
+				pcorr = ptime - timegraph[0] - Td / 4
 				vwp = voltages[int(pcorr * sampspersec)]
 				vwpt = voltages[int((pcorr - delay) * sampspersec)]
 
