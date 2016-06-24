@@ -56,8 +56,6 @@ for filename in filelist:
 	N3 = 2 * N2
 	vhisttwo = [0] * N3
 
-	foutv = open(str(filename) + "v.out","w")
-	foutvf = open(str(filename) + "vf.out","w")
 	foutvt = open(str(filename) + "vt.out","w")
 	foutx = open(str(filename) + "xs.out","w")
 
@@ -77,7 +75,7 @@ for filename in filelist:
 		dec1 = np.exp(-dt/T1)
 		dec2 = np.exp(-dt/T2)
 
-	foutv.write(str(T) + "\n")
+	foutvt.write(str(T) + "\n")
 
 	while t < T:
 		I = (np.sin(x1hist[ctr % N] - x2hist[ctr % N] + phi)) ** 2
@@ -102,19 +100,12 @@ for filename in filelist:
 		#Record data
 		if int(t / dt) % int(samptime / dt) == 0:
 			if t >= transtime:
-				foutv.write("{:6f}\n".format(x1 - x2))
+				#foutv.write("{:6f}\n".format(x1 - x2))
 				if (x1 - x2 - pval) * xdiff < 0:
 					foutx.write("{:6f}\n".format(t))
 					foutvt.write("{:6f} {:6f}\n".format(vhisttwo[0], vhisttwo[N2]))
-					'''
-					#foutvf.write("{:6f} {:6f}\n".format(vhistsum / N2, vlag[(ctr2 % N2)]))
-					#foutvf.write("{:6f} {:6f}\n".format(np.average(vhisttwo[N2:]), np.average(vhisttwo[:N2])))
-					#print "{:6f}, {:6f} {:6f} {:6f} {:6f}".format(x1 - x2, vhistsum / N2, np.average(vhisttwo[N2:]), vlag[ctr2 % N2], np.average(vhisttwo[:N2]))
-			vlag[(ctr2 % N2)] = vhistsum / N2
-			vhistsum += (x1 - x2) - vhist[ctr2 % N2]
-			vhist[(ctr2 % N2)] = x1 - x2
 			vhisttwo.append(x1 - x2)
-			vhisttwo.pop()'''
+			vhisttwo.pop(0)
 			xdiff = x1 - x2 - pval
 			ctr2 += 1
 
@@ -128,10 +119,10 @@ for filename in filelist:
 		t += dt
 		ctr += 1
 
-	foutv.close()
+	#foutv.close()
 	foutx.close()
-	foutvf.close()
 	foutvt.close()
+	#foutvf.close()
 	if points:
 		foutpop.close()
 
