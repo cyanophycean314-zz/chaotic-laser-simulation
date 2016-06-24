@@ -30,10 +30,11 @@ phi = np.pi / 4 #Filter phase displacement
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 deterministic = False
-T = 10. #seconds to simulate
+points = False #Count pops
+T = 15. #seconds to simulate
 
 if not deterministic:
-	filelist = [3200]
+	filelist = [3200, 5000, 7000, 10000, 12000, 15000, 20000, 30000]
 else:
 	filelist = ["det"]
 
@@ -56,7 +57,8 @@ for filename in filelist:
 	timestart = time.clock()
 
 	if not deterministic:
-		foutpop = open(str(filename) + "pop.out","w")
+		if points:
+			foutpop = open(str(filename) + "pop.out","w")
 		lambda0timesTd = int(filename) #Metric given in Aaron's paper
 		lambda0 = lambda0timesTd / Td
 		mu = 1 / lambda0 #Poisson interarrival time average
@@ -80,7 +82,7 @@ for filename in filelist:
 				if random.random() <= I:
 					x1 += beta / lambda0
 					x2 += beta / lambda0
-					if t >= transtime:
+					if points and t >= transtime:
 						foutpop.write("{:6f}\n".format(t))
 				index += 1
 				lastt = lastt + taus[index]
@@ -107,7 +109,7 @@ for filename in filelist:
 
 	foutv.close()
 	foutx.close()
-	if deterministic:
+	if points:
 		foutpop.close()
 
 	print str(filename) + ": " + str(time.clock() - timestart)

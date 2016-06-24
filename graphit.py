@@ -95,14 +95,14 @@ for filename in filelist:
 
 	if poincare:
 		pbinw = 0.05
-		minp = 1.
-		maxp = 5.
+		minp = 0.5
+		maxp = 6.
 		ran = maxp - minp
 		num = int(ran / pbinw)
 		psec = [[0 for _ in range(num)] for x in range(num)]
 		delay = Td / 4
 
-		slicer = [[minp, maxp], [minp, maxp]]
+		slicer = [[minp + ran / 4, minp + 3 * ran / 4], [minp, maxp]]
 		slope = (slicer[1][1] - slicer[1][0]) / (slicer[0][1] - slicer[0][0])
 		pslice = [0 for i in range(int((slicer[0][1] - slicer[0][0]) / pbinw))]
 		for ptime in poincaretimes:
