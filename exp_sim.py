@@ -42,7 +42,7 @@ offset = int(transcount * Td / binw)
 maxp = 1
 pbinw = 1
 
-deterministic = True
+deterministic = False
 filelist = ["lambda0Td=" + str(x) for x in [1000,1500,2000,2500,3000,3500,4000,5000,10000]]
 #filelist = ["lambda0Td=10000"]
 histogram = False
@@ -56,11 +56,12 @@ if not deterministic:
 		print lambda0timesTd
 		lambda0 = lambda0timesTd / Td
 		mu = 1 / lambda0 #Poisson interarrival time average
-		n = 10000 * lambda0timesTd
+		n = 1000 * lambda0timesTd
 
 		foutpop = open('lambda0Td=' + str(lambda0timesTd) + 'pop.out','w')
 		foutx = open('lambda0Td=' + str(lambda0timesTd) + 'xs.out','w') #x-simplified
 		foutv = open('lambda0Td=' + str(lambda0timesTd) + 'v.out','w') #x-simplified
+
 		#Generate photon times!
 		taus = np.random.exponential (mu , n) #Interarrival times
 		photontimes = np.cumsum(taus) #Cumulative sum, times of arrival at modulator
@@ -74,6 +75,7 @@ if not deterministic:
 
 		t = 0 #Current time
 		index = 0 #Awaiting the next photon
+		sampspersec = 10000
 
 		#Random (ridiculous) conditions, so it can settle into normal range after a while.
 		x1 = 10 * random.random()
@@ -116,7 +118,9 @@ if not deterministic:
 
 			x1 *= dec1
 			x2 *= dec2
-			#foutx.write("{:6f} {:6f}\n".format(x1, x2))
+			if int(t / dt) % (1 * sampspersec) == 0:
+				foutv.write("{:6f}\n".format(x1 - x2))
+
 
 			#Take the poincare slice
 			if (x1 - x2 - np.pi) * xdiff < 0:
@@ -142,6 +146,7 @@ if not deterministic:
 
 		foutpop.close()
 		foutx.close()
+		foutv.close()
 
 		print 'Files saved!'
 else:

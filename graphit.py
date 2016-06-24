@@ -42,9 +42,9 @@ offset = int(transcount * Td / binw)
 maxp = 1
 pbinw = 1
 
-deterministic = True
-filelist = ["lambda0Td=" + str(x) for x in [1000,1500,2000,2500,3000,3500,4000,5000,10000]]
-#filelist = ["lambda0Td=10000"]
+deterministic = False
+#filelist = ["lambda0Td=" + str(x) for x in [1000,1500,2000,2500,3000,3500,4000,5000,10000]]
+filelist = ["lambda0Td=8000"]
 histogram = True
 autocorr = False
 poincare = True
@@ -132,8 +132,8 @@ def getautocorr(Nw, deterministic=False):
 
 #Poincare section
 ################################
-def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
-	if not deterministic:
+def getpoincare(Nw, poincaretimes, ltTd, deterministic=False, voltage = True):
+	if not deterministic and not voltages:
 		if ltTd < 13:
 			pbinw = 1
 			maxp = 8
@@ -169,6 +169,29 @@ def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
 					pslice[int(nwp - maxp / 4) / pbinw] += 1
 
 		print 'Poincare section and slice done!'
+	elif not deterministic:
+		pbinw = 0.1
+		maxp = 10
+		psec = [[int(_) for _ in x] for x in np.zeros((maxp / pbinw, maxp / pbinw))] #(N_w(t), N_w(t - Td/4))
+		pslice = [0 for x in range(int(maxp / 2 / pbinw))]
+		#The slice we're taking is y = maxp -2(x - maxp / 4)
+		for ptime in poincaretimes:
+			if ptime > 2 * Td / 4:
+				#print ptime
+				print ptime
+				nwp = Nw[int((ptime - Td / 4) * sampspersec)] #Time shift the first one back cause smoothing
+				nwpt = Nw[int((ptime - 2 * Td / 4) * sampspersec)]
+
+				if nwp >= maxp:
+					nwp -= pbinw / 2
+				if nwpt >= maxp:
+					nwpt -= pbinw / 2
+				psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
+				
+				if abs(int((maxp - 2*(nwp - maxp / 4)) / pbinw) - int(nwpt / pbinw)) <= 1:
+					pslice[int(nwp - maxp / 4 / pbinw)] += 1
+
+		print 'Poincare section and slice done!'		
 	else:
 		intensities = Nw
 		pbinw = 0.005
@@ -255,10 +278,10 @@ def showgraphs(Nw, timegraph, poincaretimes, ltTd, deterministic):
 		else:
 			plt.subplot(311)
 			plt.title('lambda0 * Td = ' + str(lambda0timesTd))
-			plt.xlim([0,T - transcount * Td])
+			plt.xlim([0,T])
 			plt.plot(timegraph, Nw)
 			plt.subplot(312)
-			plt.hist(movingwindow, bins = 20)
+			plt.hist(Nw, bins = 20)
 
 		if autocorr:
 			plt.subplot(313)
@@ -294,6 +317,7 @@ if not deterministic:
 	for filename in filelist:
 		finpop = open(str(filename) + "pop.out", 'r')
 		finxs = open(str(filename) + "xs.out", 'r')
+		finv = open(str(filename) + "v.out", 'r')
 		photonpops = []
 		poincaretimes = []
 		for line in finpop:
@@ -308,14 +332,25 @@ if not deterministic:
 		lambda0timesTd = int(float(runinfo[1]))
 		T = float(runinfo[0])
 
+		sampspersec = 10000
+		voltages = []
+		for line in finv:
+			voltages.append(float(line))
+		window = int(Td / 4 * sampspersec)
+		smoothedvoltages = [np.mean(voltages[i - window:i]) for i in range(window, len(voltages))]	
+		voltages = smoothedvoltages
+		timegraph = [x / sampspersec for x in range(len(smoothedvoltages))]
+
 		#Graph
 		print filename
+		'''
 		if histogram:
 			timegraph, movingwindow = getmovingwindow(photonpops)
 		else:
 			timegraph = []
 			movingwindow = []
-		showgraphs(movingwindow, timegraph, poincaretimes, lambda0timesTd, deterministic)
+		'''
+		showgraphs(voltages, timegraph, poincaretimes, lambda0timesTd, deterministic)
 else:
 	transtime = 0.1
 	fin = open('detint.out','r')
