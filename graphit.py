@@ -34,13 +34,16 @@ lambda0timesTd = 3200 #Metric given in Aaron's paper
 lambda0 = lambda0timesTd / Td
 mu = 1 / lambda0 #Poisson interarrival time average
 transcount = 100 #How many Td's to wait for transients to die
-n = 1000000 #Photons to generate
+n = 5000000 #Photons to generate
 #Histogram parameters
 w = Td / 4
 binw = w / 20
 offset = int(transcount * Td / binw)
+maxp = 1
+pbinw = 1
 
-deterministic = False
+simulation = False
+deterministic = True
 filelist = ["lambda0Td=" + str(x) for x in [1000,1500,2000,2500,3000,3500,4000,5000,10000]]
 #filelist = ["lambda0Td=10000"]
 histogram = False
@@ -169,24 +172,19 @@ def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
 		print 'Poincare section and slice done!'
 	else:
 		intensities = Nw
-		pbinw = 0.01
-		maxp = 1.
+		pbinw = 0.005
+		maxp = 1
 		psec = [[int(_) for _ in x] for x in np.zeros((maxp / pbinw, maxp / pbinw))] #(N_w(t), N_w(t - Td/4))
 		pslice = [0 for x in range(int(maxp / 2 / pbinw))]
 		#The slice we're taking is y = maxp -2(x - maxp / 4)
 		for ptime in poincaretimes:
-			if ptime > transtime + Td:
+			if ptime > Td:
 				nwp = intensities[int((ptime - transtime) * sampspersec)]
 				nwpt = intensities[int((ptime - transtime - Td / 4) * sampspersec)]
-				if nwp >= maxp:
-					nwp -= pbinw / 2
-				if nwpt >= maxp:
-					nwpt -= pbinw / 2
-				print str(nwp) + "," + str(nwpt)
 				psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
 				if abs(int((maxp - 2*(nwp - maxp / 4)) / pbinw) - int(nwpt / pbinw)) <= 1:
 					print str(nwp) + "," + str(nwpt)
-					pslice[int((nwp - maxp / 4) / pbinw)] += 1
+					pslice[int(nwp - maxp / 4 / pbinw)] += 1
 
 		print 'Poincare section and slice done!'
 	print maxp
@@ -285,150 +283,47 @@ def showgraphs(Nw, timegraph, poincaretimes, ltTd, deterministic):
 
 	plt.show()
 
-
 if not deterministic:
-	for lambda0timesTd in [8000]:
-		print lambda0timesTd
-		lambda0 = lambda0timesTd / Td
-		mu = 1 / lambda0 #Poisson interarrival time average
-		n = 10000 * lambda0timesTd
+	for filename in filelist:
+		finpop = open(str(filename) + "pop.out", 'r')
+		finxs = open(str(filename) + "xs.out", 'r')
+		photonpops = []
+		poincaretimes = []
+		for line in finpop:
+			photonpops.append(line)
+		photonpops.pop() #Last line is a bit buggy usually
+		runinfo = photonpops.pop(0).split() #First line is the info sectioN
+		for line in finxs:
+			poincaretimes.append(float(line))
+		for i in range(len(photonpops)):
+			photonpops[i] = float(photonpops[i])
+		n = int(float(runinfo[2]))
+		lambda0timesTd = int(float(runinfo[1]))
+		T = float(runinfo[0])
 
-		foutpop = open('lambda0Td=' + str(lambda0timesTd) + 'pop.out','w')
-		foutx = open('lambda0Td=' + str(lambda0timesTd) + 'xs.out','w') #x-simplified
-		#Generate photon times!
-		taus = np.random.exponential (mu , n) #Interarrival times
-		photontimes = np.cumsum(taus) #Cumulative sum, times of arrival at modulator
-		photonpops = [] #Times of photon arivals at counter!
-		T = photontimes[n - 1] #max of the list
-		poincaretimes = [] #Points for poincare section, x1 - x2 = pi
-		#print np.array_str (taus)
-		foutpop.write('{:.6f} {:.1f} {}'.format(T, lambda0timesTd, n))
-		print np.array_str (photontimes)
-		print 'n/T ' + str(n / T) + ' lambda0 ' + str(lambda0)
-
-		t = 0 #Current time
-		index = 0 #Awaiting the next photon
-
-		#Random (ridiculous) conditions, so it can settle into normal range after a while.
-		x1 = 10 * random.random()
-		x2 = 10 * random.random()
-		lastt = 0 #Last time since a photon was detected
-
-		dec1 = np.exp(-1/T1*dt) #precompute the decline in one tick of x1,x2
-		dec2 = np.exp(-1/T2*dt)
-		probs = []
-
-		timestart = time.clock()
-
-		x1hist = [.7834] * int(Td / dt)
-		x2hist = [0] * int(Td / dt)
-
-		xdiff = 0
-
-		while t < T:
-			while index < n and photontimes[index] < t:
-				#Get all the photons inside this tick
-				ptime = photontimes[index]
-				prob = np.sin( x1hist[0] - x2hist[0] + phi) ** 2
-
-				if ptime > transcount * Td:
-					probs.append(prob)
-				#fout.write("{:.4e} {:.4e}\n".format(x1hist[0], x2hist[0]))
-
-				#A photon is queued up, send it through the modulator
-				if random.random() <= prob:
-					#Photon passed through!
-					#print 'Pop'
-					if ptime > transcount * Td:
-						#Filter out transients
-						photonpops.append(ptime)
-						foutpop.write("{:7f}\n".format(ptime))
-					x1 += beta / lambda0
-					x2 += beta / lambda0
-
-				index += 1
-
-			x1 *= dec1
-			x2 *= dec2
-			#foutx.write("{:6f} {:6f}\n".format(x1, x2))
-
-			#Take the poincare slice
-			if (x1 - x2 - np.pi) * xdiff < 0:
-				poincaretimes.append(t)
-				foutx.write("{:7f}\n".format(t))
-			xdiff = x1 - x2 - np.pi
-
-			#Progress
-			if index % (n / 50) == 0:
-				print '=' * int(index / (n / 50)) + str(int(100.*index/n)) + "%"
-
-			#Update history
-			x1hist.append(x1)
-			x2hist.append(x2)
-			x1hist.pop(0)
-			x2hist.pop(0)
-
-			t += dt
-
-		timeend = time.clock()
-
-		print 'Simulation complete! Time elapsed = ' + str(timeend - timestart)
-
-		foutpop.close()
-		foutx.close()
-
-		print 'Files saved!'
+		#Graph
+		print filename
+		if histogram:
+			timegraph, movingwindow = getmovingwindow(photonpops)
+		else:
+			timegraph = []
+			movingwindow = []
+		showgraphs(movingwindow, timegraph, poincaretimes, lambda0timesTd, deterministic)
 else:
-	T = 50. #MUST BE FLOAT, lenght of sim time
-	transtime = 0.1 #drop transients, so time to start counting data
-	samptime = 0.00001
-	sampspersec = 1 / samptime #number of samples to collect
-
-	t = 0 #Current time
-	#Random (ridiculous) conditions, so it can settle into normal range after a while.
-	x1 = 10 * random.random()
-	x2 = 10 * random.random()
-	lastt = 0 #Last time since a photon was detected
-
-	x1hist = [.7834] * int(Td / dt)
-	x2hist = [0] * int(Td / dt)
-
-	timestart = time.clock()
-
-	fout = open("detint.out","w")
-	foutx = open("detxs.out","w")
-	fout.write("{:6f}\n".format(T))
-	fout.write("{}\n".format(sampspersec))
-
+	transtime = 0.1
+	fin = open('detint.out','r')
+	finxs = open('detxs.out','r')
 	intensities = []
-	timegraph = []
+	for line in fin:
+		intensities.append(float(line))
+	T = intensities.pop(0)
+	sampspersec = intensities.pop(0)
+	timegraph = [x / sampspersec for x in range(int((T - transtime) * sampspersec))]
+
 	poincaretimes = []
-	xdiff = 0
-	while t < T:
-		x1 += (- 1 / T1 * x1 + beta * np.sin(x1hist[0] - x2hist[0] + phi) ** 2) * dt
-		x2 += (- 1 / T2 * x2 + beta * np.sin(x1hist[0] - x2hist[0] + phi) ** 2) * dt
+	for line in finxs:
+		poincaretimes.append(float(line))
 
-		if t > transtime and int(t / dt) % int(samptime / dt) == 0:
-			intensities.append(np.sin(x1hist[0] - x2hist[0] + phi) ** 2)
-			timegraph.append(t - transtime)
-			fout.write("{:6f}\n".format(np.sin(x1hist[0] - x2hist[0] + phi) ** 2))
-			if (x1 - x2 - np.pi) * xdiff < 0:
-				foutx.write("{:7f}\n".format(t))
-				poincaretimes.append(t)
-			xdiff = x1 - x2 - np.pi
-
-		#Progress
-		if int(t / dt) % int(float(T) / 50 / dt) == 0:
-			print int(t / dt) / int(float(T) / 100 / dt)
-
-		#Update history
-		x1hist.append(x1)
-		x2hist.append(x2)
-		x1hist.pop(0)
-		x2hist.pop(0)
-		t += dt
-	fout.close()
-
-	print 'Files saved!'
-
+	#Graph
+	showgraphs(intensities, timegraph, poincaretimes, 0, deterministic)
 print 'Program done...'
