@@ -4,6 +4,7 @@ Exp_sim is the main program. Run simulations or read files. Easier to loop, has 
 Exp_sim_old is some old version of the program
 hardvariancefinder is an old version of Exp_sim that tries to find the variance with the complicated theoretical formula
 Kullbackleibler is for finding Kullback-leibler divergences
+oldgraphy is an old graph program (functionalized ewww)
 
 Data Batches
 0 - First run.
@@ -16,3 +17,5 @@ Data Batches
 	pop and xs - Records photon pops and times for x1 - x2 = pi
 4 - Various photon rates from 10 to 30000
 	pop and xs and v - Records photon pops and the times for x1 - x2 = pi and voltages
+5 - Various photon rates from 1000 to 30000. also deterministic
+	xs and v and vf - Records times for x1 - x2 = pi and voltages and smoothed voltages when x1 - x2 = pi (vf didn't work)
