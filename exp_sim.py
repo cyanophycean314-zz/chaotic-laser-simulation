@@ -31,12 +31,12 @@ betatimesTd = 8.87 #this is the actual measurement that Aaron used, different th
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 deterministic = True
 points = False #Count pops
-T = 1000. #seconds to simulate
+T = 200. #seconds to simulate
 
 if not deterministic:
 	filelist = [1000,2000,3200, 5000, 7000, 10000, 15000, 20000, 30000]
 else:
-	filelist = ["detfancy"]
+	filelist = ["detBIG"]
 
 for filename in filelist:
 	t = 0
@@ -58,6 +58,7 @@ for filename in filelist:
 
 	foutv = open(str(filename) + "v.out","w")
 	foutvf = open(str(filename) + "vf.out","w")
+	foutvt = open(str(filename) + "vt.out","w")
 	foutx = open(str(filename) + "xs.out","w")
 
 	timestart = time.clock()
@@ -104,6 +105,7 @@ for filename in filelist:
 				foutv.write("{:6f}\n".format(x1 - x2))
 				if (x1 - x2 - pval) * xdiff < 0:
 					foutx.write("{:6f}\n".format(t))
+					foutvt.write("{:6f} {:6f}\n".format(vhisttwo[0], vhisttwo[N2]))
 					'''
 					#foutvf.write("{:6f} {:6f}\n".format(vhistsum / N2, vlag[(ctr2 % N2)]))
 					#foutvf.write("{:6f} {:6f}\n".format(np.average(vhisttwo[N2:]), np.average(vhisttwo[:N2])))
@@ -111,9 +113,9 @@ for filename in filelist:
 			vlag[(ctr2 % N2)] = vhistsum / N2
 			vhistsum += (x1 - x2) - vhist[ctr2 % N2]
 			vhist[(ctr2 % N2)] = x1 - x2
-			xdiff = x1 - x2 - pval
 			vhisttwo.append(x1 - x2)
-			vhisttwo.pop(0)'''
+			vhisttwo.pop()'''
+			xdiff = x1 - x2 - pval
 			ctr2 += 1
 
 		#Progress
@@ -129,6 +131,7 @@ for filename in filelist:
 	foutv.close()
 	foutx.close()
 	foutvf.close()
+	foutvt.close()
 	if points:
 		foutpop.close()
 
