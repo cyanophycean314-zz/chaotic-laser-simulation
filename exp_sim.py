@@ -18,27 +18,27 @@ Loop
 
 #The (basically unchangeable conditions)
 dt = 0.000005 #Time interval (around the size of mu for lambda0 * Td = 3200)
-samptime = 0.0001 #How often to take a sample
+samptime = 0.00002 #How often to take a sample
 sampspersec = 1 / samptime #Inverse
 Td = 0.001734 #Time delay
 T1 = 0.0012 #Time constant for variable 1
 T2 = 0.00006 #Time constant for variable 2
+transtime = 0.1
 phi = np.pi / 4 #Filter phase displacement
 
 #Simulation parameters
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 deterministic = False
-T = 5 #seconds to simulate
+T = 10. #seconds to simulate
 
 if not deterministic:
-	filelist = [5000,10000]
+	filelist = [3200]
 else:
 	filelist = ["det"]
 
 for filename in filelist:
 	t = 0
-	transtime = 0.1
 	x1 = 10 * random.random()
 	x2 = 10 * random.random()
 	N = int(Td / dt)
@@ -56,6 +56,7 @@ for filename in filelist:
 	timestart = time.clock()
 
 	if not deterministic:
+		foutpop = open(str(filename) + "pop.out","w")
 		lambda0timesTd = int(filename) #Metric given in Aaron's paper
 		lambda0 = lambda0timesTd / Td
 		mu = 1 / lambda0 #Poisson interarrival time average
@@ -64,6 +65,8 @@ for filename in filelist:
 		T = np.sum(taus)
 		index = 0 #photon index
 		lastt = 0
+		dec1 = np.exp(-dt/T1)
+		dec2 = np.exp(-dt/T2)
 
 	while t < T:
 		I = (np.sin(x1hist[ctr % N] - x2hist[ctr % N] + phi)) ** 2
@@ -77,23 +80,25 @@ for filename in filelist:
 				if random.random() <= I:
 					x1 += beta / lambda0
 					x2 += beta / lambda0
+					if t >= transtime:
+						foutpop.write("{:6f}\n".format(t))
 				index += 1
 				lastt = lastt + taus[index]
 
-			x1 *= np.exp(-dt/T1)
-			x2 *= np.exp(-dt/T2)
+			x1 *= dec1
+			x2 *= dec2
 
 		#Record data
-		if t > transtime and int(t / dt) % int(samptime / dt) == 0:
+		if t >= transtime and int(t / dt) % int(samptime / dt) == 0:
 			foutv.write("{:6f}\n".format(x1 - x2))
 			if (x1 - x2 - pval) * xdiff < 0:
-				foutx.write("{:6f}\n".format(t - transtime))
+				foutx.write("{:6f}\n".format(t))
 			xdiff = x1 - x2 - pval
 
 		#Progress
 		if int(t / dt) % int(T / 50. / dt) == 0:
 			percent = int(t / dt) / int(T / 100. / dt)
-			print ('=' * (percent / 2)) + percent
+			print ('=' * (percent / 2)) + str(percent)
 
 		x1hist[ctr % N] = x1
 		x2hist[ctr % N] = x2
@@ -102,6 +107,8 @@ for filename in filelist:
 
 	foutv.close()
 	foutx.close()
+	if deterministic:
+		foutpop.close()
 
 	print str(filename) + ": " + str(time.clock() - timestart)
 

@@ -35,7 +35,7 @@ xeps = 0.003 #X epsilon
 eps = 0.00001 #other epsilon
 
 simulation = "3200"#"200" #Do the simulation or read a file
-autocorr = True #Do the autocorrelation, kinda slow
+autocorr = False #Do the autocorrelation, kinda slow
 lowlevel = False #Discrete or continuous simulation
 looptime = True #Do time-steps or photon-steps
 
@@ -169,6 +169,7 @@ if simulation == "simulation":
 	foutpop.close()
 	foutx.close()
 else:
+	dt = 0.000005
 	finpop = open(str(simulation) + "pop.out", 'r')
 	finxs = open(str(simulation) + "xs.out", 'r')
 	photonpops = []
@@ -281,7 +282,7 @@ elif lambda0timesTd < 210:
 	maxp = 80
 else:
 	pbinw = 4
-	maxp = 800
+	maxp = 1500
 
 psec = np.zeros((maxp / pbinw, maxp / pbinw)) #(N_w(t), N_w(t - Td/4))
 for ptime in poincaretimes:
@@ -307,6 +308,7 @@ print '3d attractor done!'
 
 #Variance
 #############################
+'''
 varOverW = []
 Ws = []
 for wvary in list(range(35)):
@@ -323,7 +325,7 @@ for wvary in list(range(35)):
 		mws[i - offset] = upperbound - lowerbound #no +1 because binsearch returns number over the key
 
 	varOverW.append(np.var(mws) / w)
-
+'''
 plt.figure(1)
 plt.title('lambda0 * Td = ' + str(lambda0timesTd))
 plt.subplot(311)
@@ -338,7 +340,8 @@ plt.pcolor(psec)
 fig = plt.figure(3)
 ax = fig.add_subplot(111, projection='3d')
 ax.plot(bigplot[0],bigplot[1],bigplot[2])
+'''
 plt.figure(4)
 plt.loglog(Ws, varOverW)
-
+'''
 plt.show()
