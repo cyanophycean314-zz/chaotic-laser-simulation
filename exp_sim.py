@@ -39,8 +39,6 @@ n = 5000000 #Photons to generate
 w = Td / 4
 binw = w / 20
 offset = int(transcount * Td / binw)
-maxp = 1
-pbinw = 1
 
 simulation = False
 deterministic = True
@@ -172,19 +170,24 @@ def getpoincare(Nw, poincaretimes, ltTd, deterministic=False):
 		print 'Poincare section and slice done!'
 	else:
 		intensities = Nw
-		pbinw = 0.005
-		maxp = 1
+		pbinw = 0.01
+		maxp = 1.
 		psec = [[int(_) for _ in x] for x in np.zeros((maxp / pbinw, maxp / pbinw))] #(N_w(t), N_w(t - Td/4))
 		pslice = [0 for x in range(int(maxp / 2 / pbinw))]
 		#The slice we're taking is y = maxp -2(x - maxp / 4)
 		for ptime in poincaretimes:
-			if ptime > Td:
+			if ptime > transtime + Td:
 				nwp = intensities[int((ptime - transtime) * sampspersec)]
 				nwpt = intensities[int((ptime - transtime - Td / 4) * sampspersec)]
+				if nwp >= maxp:
+					nwp -= pbinw / 2
+				if nwpt >= maxp:
+					nwpt -= pbinw / 2
+				print str(nwp) + "," + str(nwpt)
 				psec[int(nwp / pbinw)][int(nwpt / pbinw)] += 1
 				if abs(int((maxp - 2*(nwp - maxp / 4)) / pbinw) - int(nwpt / pbinw)) <= 1:
 					print str(nwp) + "," + str(nwpt)
-					pslice[int(nwp - maxp / 4 / pbinw)] += 1
+					pslice[int((nwp - maxp / 4) / pbinw)] += 1
 
 		print 'Poincare section and slice done!'
 	print maxp
