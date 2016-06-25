@@ -21,6 +21,7 @@ betatimesTd = 8.87 #this is the actual measurement that Aaron used, different th
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 
 filelist = [250,500,1000,1500,2000,3200,5000,10000,20000]
+subscripts = ["","a"]
 histogram = False
 autocorr = False
 poincare = True
@@ -57,10 +58,8 @@ if divs:
 	ksdivs = []
 
 for filename in filelist:
-	for lett in subscripts:
 	print filename
 	finvt = open(str(filename) + "vt.out","r")
-	#finx = open(str(filename) + "xs.out","r")
 
 	if histogram:
 		finv = open(str(filename) + "v.out","r")
@@ -78,10 +77,6 @@ for filename in filelist:
 		pvoltages[1].append(float(vwpt))
 
 	window = int(Td / 4 * sampspersec)
-
-	#poincaretimes = []
-	#for line in finx:
-	#	poincaretimes.append(float(line))
 
 	print 'Let the graphing begin!'
 	#Graph the stuff
@@ -136,7 +131,7 @@ for filename in filelist:
 
 		vertical = False #True if slope gets too high
 		thickness = 3 #How many pbinws
-		slicer = [[minp, maxp], [minp + 5.5 / 8 * ran, minp + 5.5 / 8 * ran]]
+		slicer = [[minp, maxp], [minp + 5. / 8 * ran, minp + 5. / 8 * ran]]
 		if vertical:
 			slopey = (slicer[0][1] - slicer[0][0]) / (slicer[1][1] - slicer[1][0])
 			pslice = [0 for i in range(int((slicer[1][1] - slicer[1][0]) / pbinw))]
