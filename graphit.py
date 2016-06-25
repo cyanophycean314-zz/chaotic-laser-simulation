@@ -19,9 +19,8 @@ phi = np.pi / 4 #Filter phase displacement
 #Simulation parameters
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
-T = 5 #seconds to simulate
 
-filelist = [250,500,1000,1500,2000,3200, 5000,10000,20000,30000]
+filelist = [250,500,1000,1500,2000,3200,5000,10000,20000]
 histogram = False
 autocorr = False
 poincare = True
@@ -58,9 +57,10 @@ if divs:
 	ksdivs = []
 
 for filename in filelist:
+	for lett in subscripts:
 	print filename
 	finvt = open(str(filename) + "vt.out","r")
-	finx = open(str(filename) + "xs.out","r")
+	#finx = open(str(filename) + "xs.out","r")
 
 	if histogram:
 		finv = open(str(filename) + "v.out","r")
@@ -79,9 +79,9 @@ for filename in filelist:
 
 	window = int(Td / 4 * sampspersec)
 
-	poincaretimes = []
-	for line in finx:
-		poincaretimes.append(float(line))
+	#poincaretimes = []
+	#for line in finx:
+	#	poincaretimes.append(float(line))
 
 	print 'Let the graphing begin!'
 	#Graph the stuff
@@ -164,7 +164,7 @@ for filename in filelist:
 
 		plt.figure(3)
 		plt.subplot(121)
-		plt.title(str(filename) + ", bin width = " + str(pbinw) + ", points = " + str(len(poincaretimes)))
+		plt.title(str(filename) + ", bin width = " + str(pbinw) + ", points = " + str(len(pvoltages[0])))
 		plt.ylim([0,num])
 		plt.xlim([0,num])
 		plt.pcolormesh(np.transpose(np.array(psec)))
