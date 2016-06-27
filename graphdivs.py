@@ -20,9 +20,12 @@ phi = np.pi / 4 #Filter phase displacement
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 
-filelist = [250,500,1000,1500,2000,3200,5000,10000,20000]
-subscripts = ["","a"]
+filelist = [10000]#[250,500,1000,1500,2000,3200,5000,10000]#,10000,20000]
+subscripts = list("abcdefghij")
+#filelist = ["detBIG"]
+#subscripts = [""]
 histogram = False
+
 autocorr = False
 poincare = True
 attractor3d = False
@@ -58,7 +61,7 @@ if divs:
 	ksdivs = []
 
 for filename in filelist:
-	pbinw = 0.008
+	pbinw = 0.006
 	minp = 1.
 	maxp = 5.
 	ran = maxp - minp
@@ -67,8 +70,8 @@ for filename in filelist:
 	delay = Td / 4
 
 	vertical = False #True if slope gets too high
-	thickness = 3 #How many pbinws
-	slicer = [[minp, maxp], [minp + 5. / 8 * ran, minp + 5. / 8 * ran]]
+	thickness = 2 #How many pbinws
+	slicer = [[minp, maxp], [maxp, minp]]
 	if vertical:
 		slopey = (slicer[0][1] - slicer[0][0]) / (slicer[1][1] - slicer[1][0])
 		pslice = [0 for i in range(int((slicer[1][1] - slicer[1][0]) / pbinw))]
@@ -92,7 +95,7 @@ for filename in filelist:
 		for i in range(len(pvoltages[0])):
 			vwp = pvoltages[0][i]
 			vwpt = pvoltages[1][i]
-			if vwp >= maxp or vwpt >= maxp or vwp <= minp or vwpt <= minp:
+			if int((vwp - minp) / pbinw) >= num or int((vwpt - minp) / pbinw) >= num or vwp <= minp or vwpt <= minp:
 				continue
 			psec[int((vwp - minp) / pbinw)][int((vwpt - minp) / pbinw)] += 1
 
@@ -107,7 +110,7 @@ for filename in filelist:
 				if abs(int((y - minp) / pbinw) - int((vwpt - minp) / pbinw)) <= thickness:
 					pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
 
-	plt.figure(3)
+	plt.figure(3, figsize = (25,10))
 	plt.subplot(121)
 	plt.title(str(filename) + ", bin width = " + str(pbinw) + ", points = " + str(np.sum(psec)))
 	plt.ylim([0,num])
@@ -124,6 +127,7 @@ for filename in filelist:
 		plt.ylim([0,len(pslice)])
 		plt.barh(range(len(pslice)), pslice)			
 	print 'Poincare section done!'
+	plt.savefig(str(filename) + ".png")
 
 	if divs:
 		trimmed = np.trim_zeros(pslice)
@@ -152,6 +156,6 @@ if divs:
 	plt.subplot(212)
 	plt.title("Kolmogorov-Smirnov distance")
 	plt.plot(ksdivs)
-	plt.show()
+	plt.savefig("divs.png")
 
 print 'Program done'

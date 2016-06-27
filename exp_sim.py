@@ -29,18 +29,19 @@ phi = np.pi / 4 #Filter phase displacement
 #Simulation parameters
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
-deterministic = False
+deterministic = True
 points = False #Count pops
 T = 200. #seconds to simulate
 
 if not deterministic:
-	filelist = [250,500,1000,1500,2000,3200,5000,10000,20000,30000]
-	subscripts = ["b","c","d"] #Allows for multiple files of the same photon rate
+	filelist = [30000]
+	subscripts = [''] + list("abcdefghijklmno")#Allows for multiple files of the same photon rate
 else:
-	filelist = ["detBIG"]
+	filelist = ["det"]
+	subscripts = ['h']#["a","b","c","d","e","f","g"]
 
 for filename in filelist:
-	for lett in subscripts
+	for lett in subscripts:
 		t = 0
 		x1 = 10 * random.random()
 		x2 = 10 * random.random()
@@ -59,6 +60,7 @@ for filename in filelist:
 		vhisttwo = [0] * N3
 
 		foutvt = open(str(filename) + lett + "vt.out","w")
+		print str(filename) + lett
 		#foutx = open(str(filename) + lett + "xs.out","w")
 
 		timestart = time.clock()
@@ -81,7 +83,7 @@ for filename in filelist:
 
 		foutvt.write(str(T) + "\n") #only predicted, you never know for sure :O
 
-		while chunkno < chunks:
+		while (deterministic and t < T) or (not deterministic and chunkno < chunks):
 			I = (np.sin(x1hist[ctr % N] - x2hist[ctr % N] + phi)) ** 2
 
 			#Evolution of x1, x2
