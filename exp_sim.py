@@ -25,6 +25,7 @@ T1 = 0.0012 #Time constant for variable 1
 T2 = 0.00006 #Time constant for variable 2
 transtime = 0.1
 phi = np.pi / 4 #Filter phase displacement
+xeps = 0.001
 
 #Simulation parameters
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
@@ -37,11 +38,14 @@ if not deterministic:
 	filelist = [30000]
 	subscripts = [''] + list("abcdefghijklmno")#Allows for multiple files of the same photon rate
 else:
-	filelist = ["det"]
-	subscripts = ['h']#["a","b","c","d","e","f","g"]
+	filelist = ["detx"]
+	subscripts = ["005","008","01","03","05","07","1"]
+	noises = [0.005, 0.008, 0.01, 0.03, 0.05, 0.07, 0.1]
 
 for filename in filelist:
-	for lett in subscripts:
+	for lettno in range(len(subscripts)):
+		lett = subscripts[lettno]
+		noise = noises[lettno]
 		t = 0
 		x1 = 10 * random.random()
 		x2 = 10 * random.random()
@@ -109,14 +113,17 @@ for filename in filelist:
 
 			#Record data
 			if int(t / dt) % int(samptime / dt) == 0:
+				v = x1 - x2
+				if deterministic:
+					v *= np.random.normal(1, noise) #Add the noise
 				if t >= transtime:
 					#foutv.write("{:6f}\n".format(x1 - x2))
-					if (x1 - x2 - pval) * xdiff < 0:
+					if (v - pval) * xdiff < 0:
 						#foutx.write("{:6f}\n".format(t))
 						foutvt.write("{:6f} {:6f}\n".format(vhisttwo[0], vhisttwo[N2]))
-				vhisttwo.append(x1 - x2)
+				vhisttwo.append(v)
 				vhisttwo.pop(0)
-				xdiff = x1 - x2 - pval
+				xdiff = v - pval
 				ctr2 += 1
 
 			#Progress

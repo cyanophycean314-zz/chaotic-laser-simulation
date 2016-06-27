@@ -20,13 +20,13 @@ phi = np.pi / 4 #Filter phase displacement
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 
-#filelist = [10,100,250,500,1000,1500,2000,3200,5000,10000,20000]
-#subscripts = list("abcdefghijklmno")
-filelist = ["det"]
-subscripts = ["BIG"] + list("abcdefgh")
-histogram = False
+filelist = [10,100,250,500,1000,1500,2000,3200,5000,10000,20000,30000]
+subs = list("abcdefghijklm")
+#filelist = ["detx" + _ for _ in ["005","008","01","03","05","07","1"]]
+#subs = [""]#["BIG"] + list("abcdefgh")
 deterministic = True
 
+histogram = False
 autocorr = False
 poincare = True
 attractor3d = False
@@ -34,52 +34,85 @@ points = False #legacy mode - look at photon counts
 divs = True
 
 if divs:
-	def getkldiv(distr):
+	def getkldiv(distr, otherdist = "uniform"):
 		#Kullback-Leibler
+		if otherdist == "uniform":
+			distr = np.trim_zeros(distr)
+			compprob = np.ones(len(distr)) / len(distr)
+		else:
+			compprob = [float(x) / np.sum(otherdist) for x in otherdist]
 		distr = [float(x) / np.sum(distr) for x in distr] #Normalize
-		uniformprob = np.ones(len(distr)) / len(distr)
 		#kldiv = sum_i P_i log (P_i / Q_i)
 		kldiv = 0
 		for i in range(len(distr)):
-			if distr[i] != 0:
-				kldiv += distr[i] * np.log(distr[i] / uniformprob[i])
+			if distr[i] * compprob[i] != 0:
+				kldiv += distr[i] * np.log(distr[i] / compprob[i])
 		print kldiv
 		return kldiv
 
-	def getksdiv(distr):
+	def getksdiv(distr, otherdist = "uniform"):
+		if otherdist == "uniform":
+			distr = np.trim_zeros(distr)
+			compprob = np.ones(len(distr)) / len(distr)
+			compcdf = np.cumsum(compprob)
+		else:
+			compprob = [float(x) / np.sum(otherdist) for x in otherdist]
+			compcdf = np.cumsum(compprob)
 		distr = [float(x) / np.sum(distr) for x in distr] #Normalize
 		distrcdf = np.cumsum(distr)
-		uniformprob = np.ones(len(distr)) / len(distr)
-		uniformcdf = np.cumsum(uniformprob)
 		#ksdiv = sup_x | F_n(x) - F(x) |
 		ksdiv = 0
 		for i in range(len(distr)):
-			ksdiv = max(ksdiv, abs(distrcdf[i] - uniformcdf[i]))
+			ksdiv = max(ksdiv, abs(distrcdf[i] - compcdf[i]))
 		print ksdiv
 		return ksdiv
 
 	kldivs = []
 	ksdivs = []
 
-for fileno in range(len(filelist)):
-	filename = filelist[fileno]
-	pbinw = 0.005
-	minp = 1.
-	maxp = 5.
-	ran = maxp - minp
-	num = int(ran / pbinw)
-	psec = [[0 for _ in range(num)] for x in range(num)]
-	delay = Td / 4
+#Calculate pure deterministic version
+pbinw = 0.01
+minp = 1.
+maxp = 5.
+ran = maxp - minp
+num = int(ran / pbinw)
+delay = Td / 4
+vertical = False #True if slope gets too high
+thickness = 2 #How many pbinws
+slicer = [[minp + 2 * ran / 5, minp + 3 * ran / 5], [maxp, minp]]
+if vertical:
+	slopey = (slicer[0][1] - slicer[0][0]) / (slicer[1][1] - slicer[1][0])
+else:
+	slope = (slicer[1][1] - slicer[1][0]) / (slicer[0][1] - slicer[0][0])
 
-	vertical = False #True if slope gets too high
-	thickness = 2 #How many pbinws
-	slicer = [[minp + 2 * ran / 5, minp + 3 * ran / 5], [maxp, minp]]
+noises = []
+for fileno in range(len(filelist) + 1):
+	if fileno == 0:
+		filename = "det"
+		subscripts = ["BIG"] + list("abcdefgh")
+	else:
+		filename = filelist[fileno - 1]
+		subscripts = subs
+
+	#Assign noise
+	if deterministic:
+		if filename[:4] == "detx":
+			noise = float("0." + filename[4:])
+		else:
+			noise = 0
+	else:
+		noise = 1 / np.sqrt(float(filename))
+
+	if fileno != 0:
+		noises.append(noise)
+
+	#Reset data
+	psec = [[0 for _ in range(num)] for x in range(num)]
 	if vertical:
-		slopey = (slicer[0][1] - slicer[0][0]) / (slicer[1][1] - slicer[1][0])
 		pslice = [0 for i in range(int((slicer[1][1] - slicer[1][0]) / pbinw))]
 	else:
-		slope = (slicer[1][1] - slicer[1][0]) / (slicer[0][1] - slicer[0][0])
 		pslice = [0 for i in range(int((slicer[0][1] - slicer[0][0]) / pbinw))]
+
 	for lett in subscripts:
 		print str(filename) + lett
 		finvt = open(str(filename) + lett + "vt.out","r")
@@ -121,7 +154,7 @@ for fileno in range(len(filelist)):
 	scaledslicer = (np.array(slicer) - minp) / pbinw
 	plt.plot(scaledslicer[0], scaledslicer[1], color = 'r')
 	plt.subplot(122)
-	plt.title("T = " + str(T) + ", thick = " + str(thickness))
+	plt.title("T = " + str(T) + ", thick = " + str(thickness) + ", noise = " + str(noise))
 	if not vertical:
 		plt.xlim([0,len(pslice)])
 		plt.bar(range(len(pslice)), pslice)
@@ -131,10 +164,12 @@ for fileno in range(len(filelist)):
 	print 'Poincare section done!'
 	plt.savefig(str(filename) + ".png")
 
-	if divs:
-		trimmed = np.trim_zeros(pslice)
-		kldivs.append(getkldiv(trimmed))
-		ksdivs.append(getksdiv(trimmed))
+	if fileno == 0:
+		pslicedet = pslice
+
+	if divs and fileno != 0:
+		kldivs.append(getkldiv(pslice, pslicedet))
+		ksdivs.append(getksdiv(pslice, pslicedet))
 
 	if attractor3d:
 		bigplot = [[],[],[]]
@@ -150,14 +185,18 @@ for fileno in range(len(filelist)):
 		print '3D attractor done!'
 	#plt.show()
 
-if divs and not deterministic:
+if divs:
 	plt.figure(6)
 	plt.subplot(211)
 	plt.title("Kullback-Leibler distance")
-	plt.plot(1/np.sqrt(np.array(filelist)), kldivs)
+	plt.plot(noises, kldivs)
 	plt.subplot(212)
 	plt.title("Kolmogorov-Smirnov distance")
-	plt.plot(1/np.sqrt(np.array(filelist)), ksdivs)
+	plt.plot(noises, ksdivs)
 	plt.savefig("divs.png")
+
+	fout = open("divs.out","w")
+	for i in range(len(noises)):
+		fout.write("{:6f} {:6f} {:6f}".format(noises[i], kldivs[i], ksdivs[i]))
 
 print 'Program done'
