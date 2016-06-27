@@ -20,11 +20,12 @@ phi = np.pi / 4 #Filter phase displacement
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 
-filelist = [10000]#[250,500,1000,1500,2000,3200,5000,10000]#,10000,20000]
-subscripts = list("abcdefghij")
-#filelist = ["detBIG"]
-#subscripts = [""]
+#filelist = [10,100,250,500,1000,1500,2000,3200,5000,10000,20000]
+#subscripts = list("abcdefghijklmno")
+filelist = ["det"]
+subscripts = ["BIG"] + list("abcdefgh")
 histogram = False
+deterministic = True
 
 autocorr = False
 poincare = True
@@ -60,8 +61,9 @@ if divs:
 	kldivs = []
 	ksdivs = []
 
-for filename in filelist:
-	pbinw = 0.006
+for fileno in range(len(filelist)):
+	filename = filelist[fileno]
+	pbinw = 0.005
 	minp = 1.
 	maxp = 5.
 	ran = maxp - minp
@@ -71,7 +73,7 @@ for filename in filelist:
 
 	vertical = False #True if slope gets too high
 	thickness = 2 #How many pbinws
-	slicer = [[minp, maxp], [maxp, minp]]
+	slicer = [[minp + 2 * ran / 5, minp + 3 * ran / 5], [maxp, minp]]
 	if vertical:
 		slopey = (slicer[0][1] - slicer[0][0]) / (slicer[1][1] - slicer[1][0])
 		pslice = [0 for i in range(int((slicer[1][1] - slicer[1][0]) / pbinw))]
@@ -90,7 +92,7 @@ for filename in filelist:
 			pvoltages[1].append(float(vwpt))
 
 		window = int(Td / 4 * sampspersec)
-		print 'Let the graphing begin!'
+		#print 'Let the graphing begin!'
 
 		for i in range(len(pvoltages[0])):
 			vwp = pvoltages[0][i]
@@ -110,7 +112,7 @@ for filename in filelist:
 				if abs(int((y - minp) / pbinw) - int((vwpt - minp) / pbinw)) <= thickness:
 					pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
 
-	plt.figure(3, figsize = (25,10))
+	plt.figure(10+fileno, figsize = (25,10))
 	plt.subplot(121)
 	plt.title(str(filename) + ", bin width = " + str(pbinw) + ", points = " + str(np.sum(psec)))
 	plt.ylim([0,num])
@@ -148,14 +150,14 @@ for filename in filelist:
 		print '3D attractor done!'
 	#plt.show()
 
-if divs:
+if divs and not deterministic:
 	plt.figure(6)
 	plt.subplot(211)
 	plt.title("Kullback-Leibler distance")
-	plt.plot(kldivs)
+	plt.plot(1/np.sqrt(np.array(filelist)), kldivs)
 	plt.subplot(212)
 	plt.title("Kolmogorov-Smirnov distance")
-	plt.plot(ksdivs)
+	plt.plot(1/np.sqrt(np.array(filelist)), ksdivs)
 	plt.savefig("divs.png")
 
 print 'Program done'
