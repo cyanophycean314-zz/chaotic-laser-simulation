@@ -20,10 +20,10 @@ phi = np.pi / 4 #Filter phase displacement
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 
-filelist = [10,100,250,500,1000,1500,2000,3200,5000,10000,20000,30000]
-subs = list("abcdefghijklm")
-#filelist = ["detx" + _ for _ in ["005","008","01","03","05","07","1"]]
-#subs = [""]#["BIG"] + list("abcdefgh")
+#filelist = [10,100,250,500,1000,1500,2000,3200,5000,10000,20000,30000]
+#subs = list("abcdefghijklm")
+filelist = ["detx" + _ for _ in ["005","008","01","03","05","07","1"]]
+subs = [""]
 deterministic = True
 
 histogram = False
@@ -95,8 +95,8 @@ for fileno in range(len(filelist) + 1):
 		subscripts = subs
 
 	#Assign noise
-	if deterministic:
-		if filename[:4] == "detx":
+	if deterministic or fileno == 0:
+		if len(filename) >= 4 and filename[:4] == "detx":
 			noise = float("0." + filename[4:])
 		else:
 			noise = 0
@@ -197,6 +197,6 @@ if divs:
 
 	fout = open("divs.out","w")
 	for i in range(len(noises)):
-		fout.write("{:6f} {:6f} {:6f}".format(noises[i], kldivs[i], ksdivs[i]))
+		fout.write("{:6f} {:6f} {:6f}\n".format(noises[i], kldivs[i], ksdivs[i]))
 
 print 'Program done'
