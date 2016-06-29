@@ -40,8 +40,8 @@ if not deterministic:
 	subscripts = [''] + list("abcdefghijklmno")#Allows for multiple files of the same photon rate
 	subsubscripts = ['']
 else:
-	filelist = ["det"]
-	subscripts = list('abcdefghijklmnop')#["005","008","01","03","05","07","1"]
+	filelist = ["detsuper"]
+	subscripts = ['']#["005","008","01","03","05","07","1"]
 	subsubscripts = ['']#list("ab")
 	noises = [0 for _ in subscripts]#[0.005, 0.008, 0.01, 0.03, 0.05, 0.07, 0.1]
 

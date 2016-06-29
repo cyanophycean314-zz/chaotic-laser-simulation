@@ -7,7 +7,7 @@ import random
 import time
 
 #The (basically unchangeable conditions)
-dt = 0.000005 #Time interval (around the size of mu for lambda0 * Td = 3200)
+dt = 0.00002 #Time interval (around the size of mu for lambda0 * Td = 3200)
 samptime = 0.00002 #How often to take a sample
 sampspersec = 1 / samptime #Inverse
 Td = 0.001734 #Time delay
@@ -22,9 +22,9 @@ beta = betatimesTd / Td #this is the real beta value, in the thousands.
 
 #filelist = [10,100,250,500,1000,1500,2000,3200,5000,10000,20000,30000]
 #subs = list("abcdefghijklm")
-filelist = ["detx" + _ for _ in ["005","008","01","03","05","07","1"]]
-subs = ["abc"]
-subsubscripts = [''] + list("ab")
+filelist = []#['det']#["detx" + _ for _ in ["005","008","01","03","05","07","1"]]
+subs = list('abcdefgh') + ['BIG','super']
+subsubscripts = [''] #+ list("ab")
 deterministic = True
 
 histogram = False
@@ -32,7 +32,7 @@ autocorr = False
 poincare = True
 attractor3d = False
 points = False #legacy mode - look at photon counts
-divs = True
+divs = False
 
 if divs:
 	def getkldiv(distr, otherdist = "uniform"):
@@ -72,7 +72,7 @@ if divs:
 	ksdivs = []
 
 #Calculate pure deterministic version
-pbinw = 0.01
+pbinw = 0.005
 minp = 1.
 maxp = 5.
 ran = maxp - minp
@@ -90,7 +90,7 @@ noises = []
 for fileno in range(len(filelist) + 1):
 	if fileno == 0:
 		filename = "det"
-		subscripts = ["BIG"] + list("abcdefgh")
+		subscripts = ["BIG","super"] + list("abcdefgh")
 	else:
 		filename = filelist[fileno - 1]
 		subscripts = subs
