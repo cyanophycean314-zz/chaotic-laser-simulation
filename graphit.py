@@ -20,8 +20,8 @@ phi = np.pi / 4 #Filter phase displacement
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 
-filelist = ['det']#[250,500,1000,1500,2000,3200,5000,10000,20000]
-subscripts = ['super','BIG'] + list('abcdefgh')#["","a"]
+filelist = ['20000NT']#[250,500,1000,1500,2000,3200,5000,10000,20000]
+subscripts = ['']#['super','BIG'] + list('abcdefgh')#["","a"]
 histogram = False
 autocorr = False
 poincare = True
@@ -237,7 +237,7 @@ for filename in filelist:
 			plt.pcolor(np.array(psec))
 			plt.show()
 
-		#plt.show()
+		plt.show()
 
 if divs:
 	plt.figure(6)
