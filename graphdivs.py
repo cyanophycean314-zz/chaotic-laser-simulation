@@ -23,7 +23,8 @@ beta = betatimesTd / Td #this is the real beta value, in the thousands.
 #filelist = [10,100,250,500,1000,1500,2000,3200,5000,10000,20000,30000]
 #subs = list("abcdefghijklm")
 filelist = ["detx" + _ for _ in ["005","008","01","03","05","07","1"]]
-subs = [""]
+subs = ["abc"]
+subsubscripts = [''] + list("ab")
 deterministic = True
 
 histogram = False
