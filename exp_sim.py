@@ -32,17 +32,18 @@ betatimesTd = 8.87 #this is the actual measurement that Aaron used, different th
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 deterministic = True
 points = False #Count pops
-T = 200. #seconds to simulate
+T = 20000. #seconds to simulate
+noisy = False
 
 if not deterministic:
 	filelist = [30000]
 	subscripts = [''] + list("abcdefghijklmno")#Allows for multiple files of the same photon rate
 	subsubscripts = ['']
 else:
-	filelist = ["detx"]
-	subscripts = ["005","008","01","03","05","07","1"]
-	subsubscripts = list("ab")
-	noises = [0.005, 0.008, 0.01, 0.03, 0.05, 0.07, 0.1]
+	filelist = ["det"]
+	subscripts = list('abcdefghijklmnop')#["005","008","01","03","05","07","1"]
+	subsubscripts = ['']#list("ab")
+	noises = [0 for _ in subscripts]#[0.005, 0.008, 0.01, 0.03, 0.05, 0.07, 0.1]
 
 for filename in filelist:
 	for lettno in range(len(subscripts)):
@@ -118,7 +119,7 @@ for filename in filelist:
 				#Record data
 				if int(t / dt) % int(samptime / dt) == 0:
 					v = x1 - x2
-					if deterministic:
+					if deterministic and noisy:
 						v *= np.random.normal(1, noise) #Add the noise
 					if t >= transtime:
 						#foutv.write("{:6f}\n".format(x1 - x2))
