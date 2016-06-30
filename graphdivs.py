@@ -20,10 +20,8 @@ phi = np.pi / 4 #Filter phase displacement
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 
-#filelist = [10,100,250,500,1000,1500,2000,3200,5000,10000,20000,30000]
-#subs = list("abcdefghijklm")
-filelist = []#['det']#["detx" + _ for _ in ["005","008","01","03","05","07","1"]]
-subs = list('abcdefgh') + ['BIG','super']
+filelist = [str(_) + 'NT' for _ in [100,250,500,1000,2000,3200,5000,10000,20000,30000,40000,50000]]
+subs = ['']
 subsubscripts = [''] #+ list("ab")
 deterministic = True
 
@@ -32,7 +30,7 @@ autocorr = False
 poincare = True
 attractor3d = False
 points = False #legacy mode - look at photon counts
-divs = False
+divs = True
 
 if divs:
 	def getkldiv(distr, otherdist = "uniform"):
@@ -90,7 +88,7 @@ noises = []
 for fileno in range(len(filelist) + 1):
 	if fileno == 0:
 		filename = "det"
-		subscripts = ["BIG","super"] + list("abcdefgh")
+		subscripts = ['com']
 	else:
 		filename = filelist[fileno - 1]
 		subscripts = subs
@@ -99,6 +97,8 @@ for fileno in range(len(filelist) + 1):
 	if deterministic or fileno == 0:
 		if len(filename) >= 4 and filename[:4] == "detx":
 			noise = float("0." + filename[4:])
+		elif len(filename) >= 2 and filename[-2:] == "NT":
+			noise = noise = 1 / np.sqrt(float(filename[:-2]))
 		else:
 			noise = 0
 	else:

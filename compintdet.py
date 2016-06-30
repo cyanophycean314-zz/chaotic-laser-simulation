@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 #Compare divs across int_noise (internal noise) and det_noise (deterministic external noise)
 
 finint = open('divs_intnoise.out','r')
-findet = open('divs_detnoise.out','r')
+findet = open('divs_tomnoise.out','r')
 
 dataint = [[],[],[]]
 for line in finint:
