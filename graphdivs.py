@@ -20,10 +20,11 @@ phi = np.pi / 4 #Filter phase displacement
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 
-filelist = [str(_) + 'NT' for _ in [100,250,500,1000,2000,3200,5000,10000,20000,30000,40000,50000]]
+#[100,250,500,1000,2000,3200,5000,10000,20000,30000]
+filelist = [str(_) for _ in [100,250,500,1000,2000,3200,5000,10000,20000,30000,40000,50000,100000,200000,300000,500000,1000000]]
 subs = ['']
 subsubscripts = [''] #+ list("ab")
-deterministic = True
+deterministic = False
 
 histogram = False
 autocorr = False
@@ -77,8 +78,9 @@ ran = maxp - minp
 num = int(ran / pbinw)
 delay = Td / 4
 vertical = False #True if slope gets too high
-thickness = 2 #How many pbinws
-slicer = [[minp + 2 * ran / 5, minp + 3 * ran / 5], [maxp, minp]]
+thickness = 1 #How many pbinws
+#slicer = [[minp + 1.3 * ran / 8, minp + 7.3 * ran / 8], [minp, maxp]]
+slicer = [[minp, maxp], [minp + 5.05 * ran / 8, minp + 6 * ran / 8]]
 if vertical:
 	slopey = (slicer[0][1] - slicer[0][0]) / (slicer[1][1] - slicer[1][0])
 else:
@@ -87,6 +89,8 @@ else:
 noises = []
 for fileno in range(len(filelist) + 1):
 	if fileno == 0:
+		if not divs:
+			continue
 		filename = "det"
 		subscripts = ['com']
 	else:
@@ -157,10 +161,10 @@ for fileno in range(len(filelist) + 1):
 	plt.subplot(122)
 	plt.title("T = " + str(T) + ", thick = " + str(thickness) + ", noise = " + str(noise))
 	if not vertical:
-		plt.xlim([0,len(pslice)])
+		plt.xlim([len(pslice) / 2,len(pslice)])
 		plt.bar(range(len(pslice)), pslice)
 	else:
-		plt.ylim([0,len(pslice)])
+		plt.ylim([len(pslice) / 2,len(pslice)])
 		plt.barh(range(len(pslice)), pslice)			
 	print 'Poincare section done!'
 	plt.savefig(str(filename) + ".png")

@@ -20,7 +20,7 @@ phi = np.pi / 4 #Filter phase displacement
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 
-filelist = ['10combo']#['20000NT']#[250,500,1000,1500,2000,3200,5000,10000,20000]
+filelist = ['detcom']#['20000NT']#[250,500,1000,1500,2000,3200,5000,10000,20000]
 subscripts = ['']#['super','BIG'] + list('abcdefgh')#["","a"]
 histogram = False
 autocorr = False
@@ -59,7 +59,7 @@ if divs:
 
 for filename in filelist:
 	print filename
-	finvt = open(str(filename) + lett + "vt.out","r")
+	finvt = open(str(filename) + "vt.out","r")
 
 	if histogram:
 		finv = open(str(filename) + lett + "v.out","r")
@@ -121,7 +121,7 @@ for filename in filelist:
 		print 'Autocorrelation done!'
 
 	if poincare:
-		pbinw = 0.001
+		pbinw = 0.005
 		minp = 1.
 		maxp = 5.
 		ran = maxp - minp
@@ -130,8 +130,9 @@ for filename in filelist:
 		delay = Td / 4
 
 		vertical = False #True if slope gets too high
-		thickness = 3 #How many pbinws
-		slicer = [[minp, maxp], [minp + 5. / 8 * ran, minp + 5. / 8 * ran]]
+		thickness = 1 #How many pbinws
+		#slicer = [[minp + 1.3 * ran / 8, minp + 7.3 * ran / 8], [minp, maxp]]
+		slicer = [[minp, maxp], [minp + 5.05 * ran / 8, minp + 6 * ran / 8]]
 		if vertical:
 			slopey = (slicer[0][1] - slicer[0][0]) / (slicer[1][1] - slicer[1][0])
 			pslice = [0 for i in range(int((slicer[1][1] - slicer[1][0]) / pbinw))]
@@ -157,7 +158,7 @@ for filename in filelist:
 				if abs(int((y - minp) / pbinw) - int((vwpt - minp) / pbinw)) <= thickness:
 					pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
 
-		plt.figure(3)
+		plt.figure(3, figsize = (30,15))
 		plt.subplot(121)
 		plt.title(str(filename) + ", bin width = " + str(pbinw) + ", points = " + str(len(pvoltages[0])))
 		plt.ylim([0,num])
@@ -167,9 +168,10 @@ for filename in filelist:
 		plt.plot(scaledslicer[0], scaledslicer[1], color = 'r')
 		plt.subplot(122)
 		plt.title("T = " + str(T) + ", thick = " + str(thickness))
+		ptrimmed = np.trim_zeros(pslice)
 		if not vertical:
-			plt.xlim([0,len(pslice)])
-			plt.bar(range(len(pslice)), pslice)
+			plt.xlim([0,len(ptrimmed)])
+			plt.bar(range(len(ptrimmed)), ptrimmed)
 		else:
 			plt.ylim([0,len(pslice)])
 			plt.barh(range(len(pslice)), pslice)			
@@ -237,6 +239,7 @@ for filename in filelist:
 		plt.show()
 
 	plt.show()
+	#plt.savefig("graphout.png")
 
 if divs:
 	plt.figure(6)
