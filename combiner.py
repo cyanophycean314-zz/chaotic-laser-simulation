@@ -2,8 +2,8 @@
 
 import sys
 
-filelist = [str(_) + '' for _ in [20000,30000,40000,50000,100000,200000,300000,500000,1000000]]
-subscripts = ['']
+filelist = [str(_) + '' for _ in ['det']]
+subscripts = ['BIG','super',''] + list('bcdefgh')
 
 for filename in filelist:
 	fout = open(str(filename) + 'comvt.out','w')

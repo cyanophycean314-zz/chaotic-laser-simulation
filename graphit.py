@@ -1,5 +1,6 @@
 #Graph the files
 
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -7,7 +8,7 @@ import random
 import time
 
 #The (basically unchangeable conditions)
-dt = 0.000005 #Time interval (around the size of mu for lambda0 * Td = 3200)
+dt = 0.00002 #Time interval (around the size of mu for lambda0 * Td = 3200)
 samptime = 0.00002 #How often to take a sample
 sampspersec = 1 / samptime #Inverse
 Td = 0.001734 #Time delay
@@ -19,10 +20,11 @@ phi = np.pi / 4 #Filter phase displacement
 #Simulation parameters
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
+histlength = 20000
 
-filelist = ['detcom']#['20000NT']#[250,500,1000,1500,2000,3200,5000,10000,20000]
+filelist = ["5000_" + str(_) for _ in range(70,99)]#sys.argv[1:]#['20000NT']#[250,500,1000,1500,2000,3200,5000,10000,20000]
 subscripts = ['']#['super','BIG'] + list('abcdefgh')#["","a"]
-histogram = False
+histogram = True
 autocorr = False
 poincare = True
 attractor3d = False
@@ -62,7 +64,7 @@ for filename in filelist:
 	finvt = open(str(filename) + "vt.out","r")
 
 	if histogram:
-		finv = open(str(filename) + lett + "v.out","r")
+		finv = open(str(filename) + "v.out","r")
 		voltages = []
 		for line in finv:
 			voltages.append(float(line))
@@ -81,13 +83,15 @@ for filename in filelist:
 	print 'Let the graphing begin!'
 	#Graph the stuff
 	if histogram:
-		plt.figure(1)
+		plt.figure(1, figsize = (15,10))
+		plt.clf()
 		plt.subplot(211)
 		plt.title(str(filename))
-		plt.xlim([0, T - transtime])
-		plt.plot(timegraph, voltages)
+		#plt.xlim([0, T - transtime])
+		plt.plot(dt * np.arange(len(voltages[:histlength])), voltages[:histlength])
 		plt.subplot(212)
-		plt.hist(voltages, bins = 100)
+		plt.hist(voltages, bins = 20)
+		plt.savefig(filename + "hist.png")
 		print 'Histogram done!'
 
 	if autocorr:
@@ -121,7 +125,7 @@ for filename in filelist:
 		print 'Autocorrelation done!'
 
 	if poincare:
-		pbinw = 0.005
+		pbinw = 0.1
 		minp = 1.
 		maxp = 5.
 		ran = maxp - minp
@@ -176,6 +180,7 @@ for filename in filelist:
 			plt.ylim([0,len(pslice)])
 			plt.barh(range(len(pslice)), pslice)			
 		print 'Poincare section done!'
+		plt.savefig(filename + ".png")
 
 		if divs:
 			trimmed = np.trim_zeros(pslice)
@@ -236,9 +241,9 @@ for filename in filelist:
 		print 'Point-care section done! Ha get it?'
 		plt.figure(5)
 		plt.pcolor(np.array(psec))
-		plt.show()
+		#plt.show()
 
-	plt.show()
+	#plt.show()
 	#plt.savefig("graphout.png")
 
 if divs:

@@ -33,7 +33,7 @@ betatimesTd = float(sys.argv[2]) #this is the actual measurement that Aaron used
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 deterministic = False
 points = False #Count pops
-T = 5. #seconds to simulate
+T = 1. #seconds to simulate
 noisy = False
 
 if not deterministic:
@@ -50,6 +50,7 @@ else:
 for filename in filelist:
 	for lettno in range(len(subscripts)):
 		for subno in range(len(subsubscripts)):
+			voltages = []
 			subsub = subsubscripts[subno]
 			lett = subscripts[lettno]
 			if noisy:
@@ -71,8 +72,8 @@ for filename in filelist:
 			N3 = 2 * N2
 			vhisttwo = [0] * N3
 
-			foutvt = open(str(filename) + lett + subsub + "vt.out","w")
-			foutv = open(str(filename) + lett + subsub + "v.out","w")
+			#foutvt = open(str(filename) + lett + subsub + "vt.out","w")
+			foutv = open(str(filename) + lett + subsub + "constv.out","w")
 			print str(filename) + lett + subsub
 			#foutx = open(str(filename) + lett + "xs.out","w")
 
@@ -94,10 +95,10 @@ for filename in filelist:
 				dec1 = np.exp(-dt/T1)
 				dec2 = np.exp(-dt/T2)
 
-			foutvt.write(str(T) + "\n") #only predicted, you never know for sure :O
+			#foutvt.write(str(T) + "\n") #only predicted, you never know for sure :O
 
 			while (deterministic and t < T) or (not deterministic and chunkno < chunks):
-				I = (np.sin(x1hist[ctr % N] - x2hist[ctr % N] + phi)) ** 2
+				I = 1#(np.sin(x1hist[ctr % N] - x2hist[ctr % N] + phi)) ** 2
 
 				#Evolution of x1, x2
 				if deterministic:
@@ -127,9 +128,10 @@ for filename in filelist:
 						v *= np.random.normal(1, noise) #Add the noise
 					if t >= transtime:
 						foutv.write("{:6f}\n".format(x1 - x2))
-						if (v - pval) * xdiff < 0:
+						voltages.append(x1 - x2)
+						#if (v - pval) * xdiff < 0:
 							#foutx.write("{:6f}\n".format(t))
-							foutvt.write("{:6f} {:6f}\n".format(vhisttwo[0], vhisttwo[N2]))
+							#foutvt.write("{:6f} {:6f}\n".format(vhisttwo[0], vhisttwo[N2]))
 					vhisttwo.append(v)
 					vhisttwo.pop(0)
 					xdiff = v - pval
@@ -147,11 +149,12 @@ for filename in filelist:
 
 		foutv.close()
 		#foutx.close()
-		foutvt.close()
+		#foutvt.close()
 		#foutvf.close()
 		if points:
 			foutpop.close()
 
 		print str(filename) + ": " + str(time.clock() - timestart)
+		print "Mean voltage: {:6f}".format(np.mean(voltages))
 
 print 'Program done...'

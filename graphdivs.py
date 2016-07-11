@@ -21,17 +21,16 @@ betatimesTd = 8.87 #this is the actual measurement that Aaron used, different th
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 
 #[100,250,500,1000,2000,3200,5000,10000,20000,30000]
-filelist = [str(_) for _ in [100,250,500,1000,2000,3200,5000,10000,20000,30000,40000,50000,100000,200000,300000,500000,1000000]]
+filelist = ["5000_" + str(_ * 10)  for _ in range(10)]
 subs = ['']
 subsubscripts = [''] #+ list("ab")
 deterministic = False
 
-histogram = False
 autocorr = False
 poincare = True
 attractor3d = False
 points = False #legacy mode - look at photon counts
-divs = True
+divs = False
 
 if divs:
 	def getkldiv(distr, otherdist = "uniform"):
@@ -98,18 +97,19 @@ for fileno in range(len(filelist) + 1):
 		subscripts = subs
 
 	#Assign noise
-	if deterministic or fileno == 0:
-		if len(filename) >= 4 and filename[:4] == "detx":
-			noise = float("0." + filename[4:])
-		elif len(filename) >= 2 and filename[-2:] == "NT":
-			noise = noise = 1 / np.sqrt(float(filename[:-2]))
+	if divs:
+		if deterministic or fileno == 0:
+			if len(filename) >= 4 and filename[:4] == "detx":
+				noise = float("0." + filename[4:])
+			elif len(filename) >= 2 and filename[-2:] == "NT":
+				noise = noise = 1 / np.sqrt(float(filename[:-2]))
+			else:
+				noise = 0
 		else:
-			noise = 0
-	else:
-		noise = 1 / np.sqrt(float(filename))
+			noise = 1 / np.sqrt(float(filename))
 
-	if fileno != 0:
-		noises.append(noise)
+		if fileno != 0:
+			noises.append(noise)
 
 	#Reset data
 	psec = [[0 for _ in range(num)] for x in range(num)]
@@ -159,7 +159,10 @@ for fileno in range(len(filelist) + 1):
 	scaledslicer = (np.array(slicer) - minp) / pbinw
 	plt.plot(scaledslicer[0], scaledslicer[1], color = 'r')
 	plt.subplot(122)
-	plt.title("T = " + str(T) + ", thick = " + str(thickness) + ", noise = " + str(noise))
+	if divs:
+		plt.title("T = " + str(T) + ", thick = " + str(thickness) + ", noise = " + str(noise))
+	else:
+		plt.title("T = " + str(T) + ", thick = " + str(thickness))
 	if not vertical:
 		plt.xlim([len(pslice) / 2,len(pslice)])
 		plt.bar(range(len(pslice)), pslice)
@@ -173,8 +176,8 @@ for fileno in range(len(filelist) + 1):
 		pslicedet = pslice
 
 	if divs and fileno != 0:
-		kldivs.append(getkldiv(pslice, pslicedet))
-		ksdivs.append(getksdiv(pslice, pslicedet))
+		kldivs.append(getkldiv(pslice[len(pslice)/2:], pslicedet[len(pslice)/2:]))
+		ksdivs.append(getksdiv(pslice[len(pslice)/2:], pslicedet[len(pslice)/2:]))
 
 	if attractor3d:
 		bigplot = [[],[],[]]
