@@ -22,9 +22,9 @@ betatimesTd = 8.87 #this is the actual measurement that Aaron used, different th
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 histlength = 20000
 
-filelist = ["5000_" + str(_) for _ in range(70,99)]#sys.argv[1:]#['20000NT']#[250,500,1000,1500,2000,3200,5000,10000,20000]
+filelist = sys.argv[1:]#['20000NT']#[250,500,1000,1500,2000,3200,5000,10000,20000]
 subscripts = ['']#['super','BIG'] + list('abcdefgh')#["","a"]
-histogram = True
+histogram = False
 autocorr = False
 poincare = True
 attractor3d = False
@@ -61,7 +61,8 @@ if divs:
 
 for filename in filelist:
 	print filename
-	finvt = open(str(filename) + "vt.out","r")
+	if poincare:
+		finvt = open(str(filename) + "vt.out","r")
 
 	if histogram:
 		finv = open(str(filename) + "v.out","r")
@@ -71,12 +72,13 @@ for filename in filelist:
 		T = voltages.pop(0)
 		print 'Voltages read!'
 
-	pvoltages = [[],[]]
-	T = float(finvt.readline())
-	for line in finvt:
-		vwp, vwpt = line.split()
-		pvoltages[0].append(float(vwp))
-		pvoltages[1].append(float(vwpt))
+	if poincare:
+		pvoltages = [[],[]]
+		T = float(finvt.readline())
+		for line in finvt:
+			vwp, vwpt = line.split()
+			pvoltages[0].append(float(vwp))
+			pvoltages[1].append(float(vwpt))
 
 	window = int(Td / 4 * sampspersec)
 
@@ -125,7 +127,7 @@ for filename in filelist:
 		print 'Autocorrelation done!'
 
 	if poincare:
-		pbinw = 0.1
+		pbinw = 0.005
 		minp = 1.
 		maxp = 5.
 		ran = maxp - minp
@@ -135,8 +137,8 @@ for filename in filelist:
 
 		vertical = False #True if slope gets too high
 		thickness = 1 #How many pbinws
-		#slicer = [[minp + 1.3 * ran / 8, minp + 7.3 * ran / 8], [minp, maxp]]
-		slicer = [[minp, maxp], [minp + 5.05 * ran / 8, minp + 6 * ran / 8]]
+		slicer = [[minp + 1.3 * ran / 8, minp + 7.3 * ran / 8], [minp, maxp]]
+		#slicer = [[minp, maxp], [minp + 5.05 * ran / 8, minp + 6 * ran / 8]]
 		if vertical:
 			slopey = (slicer[0][1] - slicer[0][0]) / (slicer[1][1] - slicer[1][0])
 			pslice = [0 for i in range(int((slicer[1][1] - slicer[1][0]) / pbinw))]
@@ -162,7 +164,7 @@ for filename in filelist:
 				if abs(int((y - minp) / pbinw) - int((vwpt - minp) / pbinw)) <= thickness:
 					pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
 
-		plt.figure(3, figsize = (30,15))
+		plt.figure(3, figsize = (25,10))
 		plt.subplot(121)
 		plt.title(str(filename) + ", bin width = " + str(pbinw) + ", points = " + str(len(pvoltages[0])))
 		plt.ylim([0,num])
@@ -171,13 +173,16 @@ for filename in filelist:
 		scaledslicer = (np.array(slicer) - minp) / pbinw
 		plt.plot(scaledslicer[0], scaledslicer[1], color = 'r')
 		plt.subplot(122)
-		plt.title("T = " + str(T) + ", thick = " + str(thickness))
-		ptrimmed = np.trim_zeros(pslice)
+		plt.title("T = " + str(T) + ", thick = " + str(thickness) + ", points = " + str(np.sum(pslice)))
+		#ptrimmed is now normalized!!!!
+		ptrimmed = [float(x) for x in pslice]/np.sum(pslice)
 		if not vertical:
 			plt.xlim([0,len(ptrimmed)])
+			plt.ylim([0,0.015])
 			plt.bar(range(len(ptrimmed)), ptrimmed)
 		else:
 			plt.ylim([0,len(pslice)])
+			plt.xlim([0,0.015])
 			plt.barh(range(len(pslice)), pslice)			
 		print 'Poincare section done!'
 		plt.savefig(filename + ".png")

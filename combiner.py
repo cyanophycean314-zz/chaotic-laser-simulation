@@ -3,7 +3,7 @@
 import sys
 
 filelist = [str(_) + '' for _ in ['det']]
-subscripts = ['BIG','super',''] + list('bcdefgh')
+subscripts = ['','super']
 
 for filename in filelist:
 	fout = open(str(filename) + 'comvt.out','w')

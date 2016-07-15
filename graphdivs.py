@@ -20,8 +20,8 @@ phi = np.pi / 4 #Filter phase displacement
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 
-#[100,250,500,1000,2000,3200,5000,10000,20000,30000]
-filelist = ["5000_" + str(_ * 10)  for _ in range(10)]
+rates = [100,250,500,1000,2000,3200,5000,10000,20000,30000,40000,50000,100000]
+filelist = [str(x) + "comtr_" for x in rates]
 subs = ['']
 subsubscripts = [''] #+ list("ab")
 deterministic = False
@@ -30,7 +30,7 @@ autocorr = False
 poincare = True
 attractor3d = False
 points = False #legacy mode - look at photon counts
-divs = False
+divs = True
 
 if divs:
 	def getkldiv(distr, otherdist = "uniform"):
@@ -98,15 +98,13 @@ for fileno in range(len(filelist) + 1):
 
 	#Assign noise
 	if divs:
-		if deterministic or fileno == 0:
-			if len(filename) >= 4 and filename[:4] == "detx":
-				noise = float("0." + filename[4:])
-			elif len(filename) >= 2 and filename[-2:] == "NT":
-				noise = noise = 1 / np.sqrt(float(filename[:-2]))
-			else:
-				noise = 0
+		if fileno == 0:
+			noise = 0
 		else:
-			noise = 1 / np.sqrt(float(filename))
+			ctr = 0
+			while filename[ctr].isdigit():
+				ctr += 1
+			noise = 1 / np.sqrt(float(filename[:ctr]))
 
 		if fileno != 0:
 			noises.append(noise)
@@ -160,15 +158,17 @@ for fileno in range(len(filelist) + 1):
 	plt.plot(scaledslicer[0], scaledslicer[1], color = 'r')
 	plt.subplot(122)
 	if divs:
-		plt.title("T = " + str(T) + ", thick = " + str(thickness) + ", noise = " + str(noise))
+		plt.title("T = " + str(T) + ", thick = " + str(thickness) + ", points = " + str(np.sum(pslice)) + ", noise = " + str(noise))
 	else:
-		plt.title("T = " + str(T) + ", thick = " + str(thickness))
+		plt.title("T = " + str(T) + ", thick = " + str(thickness) + ", points = " + str(np.sum(pslice)))
 	if not vertical:
 		plt.xlim([len(pslice) / 2,len(pslice)])
-		plt.bar(range(len(pslice)), pslice)
+		plt.ylim([0,0.01])
+		plt.bar(range(len(pslice)), [float(x) / np.sum(pslice) for x in pslice])
 	else:
 		plt.ylim([len(pslice) / 2,len(pslice)])
-		plt.barh(range(len(pslice)), pslice)			
+		plt.xlim([0,0.01])
+		plt.barh(range(len(pslice)), [float(x) / np.sum(pslice) for x in pslice])			
 	print 'Poincare section done!'
 	plt.savefig(str(filename) + ".png")
 

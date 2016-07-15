@@ -20,6 +20,10 @@ Data Batches
 5 - Various photon rates from 1000 to 30000. also deterministic
 	xs and v and vf - Records times for x1 - x2 = pi and voltages and smoothed voltages when x1 - x2 = pi (vf didn't work)
 6 - Gaussian noise added to the deterministic case (model not the best)
+	vt - Voltage at two time delays before, voltage at one time delay before
 7 - 150000NT idk what
+	vt - Voltage at two time delays before, voltage at one time delay before
 8 - Various photon rates. Just archived cause lots of data to be added. Sucks we have different amounts of data
+	vt - Voltage at two time delays before, voltage at one time delay before
 9 - Experimental data before m.G and beta is really resolved.
+	v,vt - Now examining time series again

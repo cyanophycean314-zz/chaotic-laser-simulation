@@ -18,7 +18,7 @@ Loop
 '''
 
 #The (basically unchangeable conditions)
-dt = 0.00002 #Time interval (around the size of mu for lambda0 * Td = 3200)
+dt = 0.0000002 #Time interval (around the size of mu for lambda0 * Td = 3200)
 samptime = 0.00002 #How often to take a sample
 sampspersec = 1 / samptime #Inverse
 Td = 0.001734 #Time delay
@@ -30,6 +30,7 @@ xeps = 0.001
 
 #Simulation parameters
 betatimesTd = float(sys.argv[2]) #this is the actual measurement that Aaron used, different than what he claims
+print betatimesTd
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 deterministic = False
 points = False #Count pops

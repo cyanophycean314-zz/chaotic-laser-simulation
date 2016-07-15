@@ -1,7 +1,8 @@
 #Trim files
 
-filelist = [str(x) + 'NT' for x in [100,250,500,1000,2000,3200,5000,10000,20000,30000,40000,50000]]
-linestokeep = 5000000
+rates = [100,250,500,1000,2000,3200,5000,10000,20000,30000,40000,50000,100000]
+filelist = [str(x) + "com" for x in rates] + [str(x) + "comNT" for x in rates]
+linestokeep = 10000000
 
 for filename in filelist:
 	fin = open(filename + 'vt.out','r')

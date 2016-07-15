@@ -28,15 +28,15 @@ phi = np.pi / 4 #Filter phase displacement
 xeps = 0.001
 
 #Simulation parameters
-betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
+betatimesTd = float(sys.argv[2])#8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
 deterministic = False
 points = False #Count pops
-T = 2 #seconds to simulate
+T = 5. #seconds to simulate
 noisy = False
 
 if not deterministic:
-	filelist = sys.argv[1:]
+	filelist = [sys.argv[1]]
 	subscripts = ['']#Allows for multiple files of the same photon rate
 	subsubscripts = ['']
 else:
@@ -72,7 +72,7 @@ for filename in filelist:
 			vhisttwo = [0] * N3
 
 			foutvt = open(str(filename) + lett + subsub + "NTvt.out","w")
-			#foutv = open(str(filename) + lett + subsub + "NTv.out","w")
+			foutv = open(str(filename) + lett + subsub + "NTv.out","w")
 			print str(filename) + lett + subsub + "NT"
 			#foutx = open(str(filename) + lett + "xs.out","w")
 
@@ -124,7 +124,7 @@ for filename in filelist:
 					if deterministic and noisy:
 						v *= np.random.normal(1, noise) #Add the noise
 					if t >= transtime:
-						#foutv.write("{:6f}\n".format(x1 - x2))
+						foutv.write("{:6f}\n".format(x1 - x2))
 						if (v - pval) * xdiff < 0:
 							#foutx.write("{:6f}\n".format(t))
 							foutvt.write("{:6f} {:6f}\n".format(vhisttwo[0], vhisttwo[N2]))
@@ -143,7 +143,7 @@ for filename in filelist:
 				t += dt
 				ctr += 1
 
-		#foutv.close()
+		foutv.close()
 		#foutx.close()
 		foutvt.close()
 		#foutvf.close()
