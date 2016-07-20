@@ -37,7 +37,7 @@ noisy = False
 
 if not deterministic:
 	filelist = [sys.argv[1]]
-	subscripts = ['']#Allows for multiple files of the same photon rate
+	subscripts = ["_" + str(int(betatimesTd * 10))]#Allows for multiple files of the same photon rate
 	subsubscripts = ['']
 else:
 	filelist = ["detsuper"]

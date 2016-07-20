@@ -20,13 +20,13 @@ phi = np.pi / 4 #Filter phase displacement
 #Simulation parameters
 betatimesTd = 8.87 #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
-histlength = 20000
+histlength = 15000
 
 filelist = sys.argv[1:]#['20000NT']#[250,500,1000,1500,2000,3200,5000,10000,20000]
 subscripts = ['']#['super','BIG'] + list('abcdefgh')#["","a"]
-histogram = False
+histogram = True
 autocorr = False
-poincare = True
+poincare = False
 attractor3d = False
 points = False #legacy mode - look at photon counts
 divs = False
@@ -88,11 +88,13 @@ for filename in filelist:
 		plt.figure(1, figsize = (15,10))
 		plt.clf()
 		plt.subplot(211)
-		plt.title(str(filename))
+		plt.xlabel("Time (s)")
+		plt.ylabel("Voltage (V)")
+		plt.title("Voltage versus time")
 		#plt.xlim([0, T - transtime])
 		plt.plot(dt * np.arange(len(voltages[:histlength])), voltages[:histlength])
 		plt.subplot(212)
-		plt.hist(voltages, bins = 20)
+		plt.hist(voltages, bins = 200)
 		plt.savefig(filename + "hist.png")
 		print 'Histogram done!'
 

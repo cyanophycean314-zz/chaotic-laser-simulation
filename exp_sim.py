@@ -29,9 +29,9 @@ phi = np.pi / 4 #Filter phase displacement
 xeps = 0.001
 
 #Simulation parameters
-betatimesTd = float(sys.argv[2]) #this is the actual measurement that Aaron used, different than what he claims
+betatimesTd = 8.87#float(sys.argv[2]) #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
-deterministic = False
+deterministic = True
 points = False #Count pops
 T = 5. #seconds to simulate
 noisy = False
@@ -42,7 +42,7 @@ if not deterministic:
 	subsubscripts = ['']
 	noises = [0]
 else:
-	filelist = ["detsuper"]
+	filelist = ["detmerp"]
 	subscripts = ['']#["005","008","01","03","05","07","1"]
 	subsubscripts = ['']#list("ab")
 	noises = [0 for _ in subscripts]#[0.005, 0.008, 0.01, 0.03, 0.05, 0.07, 0.1]
