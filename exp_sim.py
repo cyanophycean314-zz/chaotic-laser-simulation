@@ -6,7 +6,6 @@ import numpy as np
 import random
 import time
 
-
 '''
 Outline
 
@@ -29,12 +28,13 @@ phi = np.pi / 4 #Filter phase displacement
 xeps = 0.001
 
 #Simulation parameters
-betatimesTd = 8.87#float(sys.argv[2]) #this is the actual measurement that Aaron used, different than what he claims
+betatimesTd = 0.5 #float(sys.argv[2]) #this is the actual measurement that Aaron used, different than what he claims
 beta = betatimesTd / Td #this is the real beta value, in the thousands.
-deterministic = True
+deterministic = False
 points = False #Count pops
 T = 5. #seconds to simulate
 noisy = False
+normal = True #True if feedback is on
 
 if not deterministic:
 	filelist = [int(sys.argv[1])]
@@ -58,8 +58,8 @@ for filename in filelist:
 			x1 = 10 * random.random()
 			x2 = 10 * random.random()
 			N = int(Td / dt)
-			x1hist = [.7834] * N
-			x2hist = [.7834] * N
+			x1hist = [10 * random.random() for _ in range(N)]
+			x2hist = [10 * random.random() for _ in range(N)]
 			xdiff = 0
 			pval = np.pi
 			ctr = 0
@@ -97,7 +97,7 @@ for filename in filelist:
 			foutvt.write(str(T) + "\n") #only predicted, you never know for sure :O
 
 			while (deterministic and t < T) or (not deterministic and chunkno < chunks):
-				I = (np.sin(x1hist[ctr % N] - x2hist[ctr % N] + phi)) ** 2
+				I = (np.sin(x1hist[ctr % N] - x2hist[ctr % N] + phi)) ** 2 if normal else 1
 
 				#Evolution of x1, x2
 				if deterministic:

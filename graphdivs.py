@@ -3,6 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.colors as clrs
 import random
 import time
 
@@ -70,7 +71,7 @@ if divs:
 	ksdivs = []
 
 #Calculate pure deterministic version
-pbinw = 0.005
+pbinw = 0.02
 minp = 1.
 maxp = 5.
 ran = maxp - minp
@@ -148,12 +149,13 @@ for fileno in range(len(filelist) + 1):
 				if abs(int((y - minp) / pbinw) - int((vwpt - minp) / pbinw)) <= thickness:
 					pslice[int((vwp - slicer[0][0]) / pbinw)] += 1
 
-	plt.figure(10+fileno, figsize = (25,10))
+	plt.figure(10+fileno, figsize = (24,10))
 	plt.subplot(121)
 	plt.title(str(filename) + ", bin width = " + str(pbinw) + ", points = " + str(np.sum(psec)))
 	plt.ylim([0,num])
 	plt.xlim([0,num])
-	plt.pcolormesh(np.transpose(np.array(psec)))
+	pnorm = [[float(_) for _ in x] for x in psec]/np.sum(psec)
+	plt.pcolormesh(np.transpose(np.array(pnorm)), norm = clrs.Normalize(vmin=0, vmax=0.0015, clip = False))
 	scaledslicer = (np.array(slicer) - minp) / pbinw
 	plt.plot(scaledslicer[0], scaledslicer[1], color = 'r')
 	plt.subplot(122)
@@ -163,11 +165,11 @@ for fileno in range(len(filelist) + 1):
 		plt.title("T = " + str(T) + ", thick = " + str(thickness) + ", points = " + str(np.sum(pslice)))
 	if not vertical:
 		plt.xlim([len(pslice) / 2,len(pslice)])
-		plt.ylim([0,0.01])
+		plt.ylim([0,0.05])
 		plt.bar(range(len(pslice)), [float(x) / np.sum(pslice) for x in pslice])
 	else:
 		plt.ylim([len(pslice) / 2,len(pslice)])
-		plt.xlim([0,0.01])
+		plt.xlim([0,0.05])
 		plt.barh(range(len(pslice)), [float(x) / np.sum(pslice) for x in pslice])			
 	print 'Poincare section done!'
 	plt.savefig(str(filename) + ".png")

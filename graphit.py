@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import random
 import time
+import matplotlib
 
 #The (basically unchangeable conditions)
 dt = 0.00002 #Time interval (around the size of mu for lambda0 * Td = 3200)
@@ -14,7 +15,7 @@ sampspersec = 1 / samptime #Inverse
 Td = 0.001734 #Time delay
 T1 = 0.0012 #Time constant for variable 1
 T2 = 0.00006 #Time constant for variable 2
-transtime = 0.1
+transtime = 0.4
 phi = np.pi / 4 #Filter phase displacement
 
 #Simulation parameters
@@ -30,6 +31,7 @@ poincare = False
 attractor3d = False
 points = False #legacy mode - look at photon counts
 divs = False
+printdata = False
 
 if divs:
 	def getkldiv(distr):
@@ -64,7 +66,7 @@ for filename in filelist:
 	if poincare:
 		finvt = open(str(filename) + "vt.out","r")
 
-	if histogram:
+	if histogram or attractor3d:
 		finv = open(str(filename) + "v.out","r")
 		voltages = []
 		for line in finv:
@@ -91,10 +93,13 @@ for filename in filelist:
 		plt.xlabel("Time (s)")
 		plt.ylabel("Voltage (V)")
 		plt.title("Voltage versus time")
-		#plt.xlim([0, T - transtime])
+		plt.xlim([0,0.3])
+		#plt.ylim([0,6])
 		plt.plot(dt * np.arange(len(voltages[:histlength])), voltages[:histlength])
 		plt.subplot(212)
-		plt.hist(voltages, bins = 200)
+		plt.ylim([0,0.5])
+		plt.xlim([0,6])
+		plt.hist(voltages, bins = 200, normed = True)
 		plt.savefig(filename + "hist.png")
 		print 'Histogram done!'
 
@@ -129,9 +134,9 @@ for filename in filelist:
 		print 'Autocorrelation done!'
 
 	if poincare:
-		pbinw = 0.005
+		pbinw = 0.02005
 		minp = 1.
-		maxp = 5.
+		maxp = 5.1
 		ran = maxp - minp
 		num = int(ran / pbinw)
 		psec = [[0 for _ in range(num)] for x in range(num)]
@@ -139,8 +144,8 @@ for filename in filelist:
 
 		vertical = False #True if slope gets too high
 		thickness = 1 #How many pbinws
-		slicer = [[minp + 1.3 * ran / 8, minp + 7.3 * ran / 8], [minp, maxp]]
-		#slicer = [[minp, maxp], [minp + 5.05 * ran / 8, minp + 6 * ran / 8]]
+		#slicer = [[minp + 1.3 * ran / 8, minp + 7.3 * ran / 8], [minp, maxp]]
+		slicer = [[minp, maxp], [minp + 5.05 * ran / 8, minp + 6 * ran / 8]]
 		if vertical:
 			slopey = (slicer[0][1] - slicer[0][0]) / (slicer[1][1] - slicer[1][0])
 			pslice = [0 for i in range(int((slicer[1][1] - slicer[1][0]) / pbinw))]
@@ -151,7 +156,7 @@ for filename in filelist:
 		for i in range(len(pvoltages[0])):
 			vwp = pvoltages[0][i]
 			vwpt = pvoltages[1][i]
-			if vwp >= maxp or vwpt >= maxp or vwp <= minp or vwpt <= minp:
+			if int((vwp - minp) / pbinw) >= num or int((vwpt - minp) / pbinw) >= num or vwp <= minp or vwpt <= minp:
 				continue
 			psec[int((vwp - minp) / pbinw)][int((vwpt - minp) / pbinw)] += 1
 
@@ -185,7 +190,7 @@ for filename in filelist:
 		else:
 			plt.ylim([0,len(pslice)])
 			plt.xlim([0,0.015])
-			plt.barh(range(len(pslice)), pslice)			
+			plt.barh(range(len(pslice)), pslice)
 		print 'Poincare section done!'
 		plt.savefig(filename + ".png")
 
@@ -194,17 +199,50 @@ for filename in filelist:
 			kldivs.append(getkldiv(trimmed))
 			ksdivs.append(getksdiv(trimmed))
 
+		if printdata:
+			lenbox = 200
+			foutprint = open(filename + 'joeprint.out','w')
+			joeprintarray = np.array([ _[:lenbox] for _ in np.transpose(psec)[:lenbox]])
+			for line in joeprintarray:
+				foutprint.write(' '.join([str(x) for x in line]) + '\n')
+			plt.figure(1243)
+			plt.pcolor(joeprintarray)
+			plt.show()
+			foutprint.close()
+
 	if attractor3d:
-		bigplot = [[],[],[]]
-		for i in range(2 * window, len(voltages) / 100):
-			bigplot[0].append(voltages[i])
-			bigplot[1].append(voltages[i - window])
-			bigplot[2].append(voltages[i - 2 * window])
-
-		fig = plt.figure(4)
+		addslice = True
+		fig = plt.figure(4, figsize = (10,7))	
+		plt.hold(True)
 		ax = fig.add_subplot(111, projection = '3d')
-		ax.plot(bigplot[0], bigplot[1], bigplot[2])
-
+		bigplot = [[],[],[]]
+		for i in range(2 * window, len(voltages)/5):
+			if not addslice or voltages[i - 2 * window] >= np.pi:
+				bigplot[0].append(voltages[i])
+				bigplot[1].append(voltages[i - window])
+				bigplot[2].append(voltages[i - 2 * window])
+			else:
+				if len(bigplot[0]) > 0:
+					ax.plot(bigplot[0], bigplot[1], bigplot[2], linewidth = 0.1, color = 'b')
+					bigplot = [[], [], []]
+		
+		ax.plot(bigplot[0], bigplot[1], bigplot[2], linewidth = 0.1, color = 'b')		
+		#Plot plane slice
+		X = np.arange(0,6,0.1)		
+		Y = np.arange(0,6,0.1)
+		X, Y = np.meshgrid(X, Y)
+		matplotlib.rcParams.update({'font.size': 25})
+		plt.tick_params(labelsize = '20')
+		plt.xlabel(r'$V(t - T_d)$')
+		plt.ylabel(r'$V(t - 2T_d)$')
+		ax.set_zlabel(r'$V(t)$')
+		ax.set_zlim([0,6])
+		plt.xlim([0,6])
+		plt.ylim([0,6])
+		Z = np.array([[np.pi for _ in x] for x in Y])
+		if addslice:
+			ax.plot_surface(X,Y,Z, color = 'c')
+		plt.savefig('3dattractor{}.png'.format('_sliced' if addslice else ''), bbox_inches = 'tight')
 		print '3D attractor done!'
 
 	if points:
