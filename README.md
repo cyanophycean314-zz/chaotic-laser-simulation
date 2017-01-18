@@ -1,10 +1,12 @@
 # chaotic-laser-simulation
 
+This repository contains the main code for the simulations and visualizations I did over this summer as part of the TREND REU at University of Maryland in the summer of 2016.
+
 Exp_sim is the main program. Run simulations or read files. Easier to loop, has graph functions
 Exp_sim_old is some old version of the program
 hardvariancefinder is an old version of Exp_sim that tries to find the variance with the complicated theoretical formula
 Kullbackleibler is for finding Kullback-leibler divergences
-oldgraphy is an old graph program (functionalized ewww)
+oldgraphy is an old graph program
 
 Data Batches
 0 - First run.
